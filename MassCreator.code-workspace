@@ -1,0 +1,10 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"python.defaultInterpreterPath": "~/anaconda3/envs/pyoccEnv/bin/python"
+	}
+}
