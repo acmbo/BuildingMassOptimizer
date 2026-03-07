@@ -1,0 +1,6323 @@
+sustainability
+Article
+
+Subtractive Building Massing for Performance-Based
+Architectural Design Exploration: A Case Study of
+Daylighting Optimization
+Likai Wang 1 , Patrick Janssen 2 , Kian Wee Chen 3 , Ziyu Tong 1, * and Guohua Ji 1, *
+1
+2
+3
+
+*
+
+School of Architecture and Urban Planning, Nanjing University, Nanjing 210093, China;
+dg1436002@smail.nju.edu.cn
+School of Design and Environment, National University of Singapore, Singapore 117566, Singapore;
+patrick@janssen.name
+Andlinger Center for Energy and the Environment, Princeton University, Princeton, NJ 08544, USA;
+chenkianwee@gmail.com
+Correspondence: tzy@nju.edu.cn (Z.T.); jgh@nju.edu.cn (G.J.); Tel.: +86-13805178067 (Z.T.);
++86-13605192392 (G.J.)
+
+Received: 15 November 2019; Accepted: 4 December 2019; Published: 6 December 2019
+
+
+
+
+Abstract: For sustainable building design, performance-based optimization incorporating parametric
+modelling and evolutionary optimization can allow architects to leverage building massing
+design to improve energy performance. However, two key challenges make such applications
+of performance-based optimization difficult in practice. First, due to the parametric modelling
+approaches, the topological variability in the building massing variants is often very limited. This, in
+turn, limits the scope for the optimization process to discover high-performing solutions. Second, for
+architects, the process of creating parametric models capable of generating the necessary topological
+variability is complex and time-consuming, thereby significantly disrupting the design processes.
+To address these two challenges, this paper presents a parametric massing algorithm based on the
+subtractive form generation principle. The algorithm can generate diverse building massings with
+significant topological variability by removing different parts from a predefined volume. Additionally,
+the algorithm can be applied to different building massing design scenarios without additional
+parametric modelling being required. Hence, using the algorithm can help architects achieve an
+explorative performance-based optimization for building massing design while streamlining the
+overall design process. Two case studies of daylighting performance optimizations are presented,
+which demonstrate that the algorithm can enhance the exploration of the potential in building massing
+design for energy performance improvements.
+Keywords: parametric massing algorithm; building massing design; performance-based optimization;
+design exploration; subtractive form generation principle; passive energy savings; daylighting
+
+1. Introduction
+Recent decades have witnessed rapid urbanization in China, which has fed the demand for more
+energy-efficient buildings moving towards a more sustainable future. While engineering methods,
+such as system control, renewable energy generation, and high-performance materials, have been
+widely applied in the building sector, the contribution made by architectural design remains limited.
+This issue has raised widespread concerns in architecture and increased the awareness of embracing
+performance-based design or performative design in architectural design [1,2]. In performance-based
+design for energy sustainability, building massing design can play a role in energy performance
+improvement [3–5]. A good building massing design can make the building adapt to the surrounding
+Sustainability 2019, 11, 6965; doi:10.3390/su11246965
+
+www.mdpi.com/journal/sustainability
+
+Sustainability 2019, 11, 6965
+
+2 of 20
+
+urban environment and take advantage of climate resources, such as sun, light, and wind. As a result,
+the building can benefit from passive energy savings by leveraging daylighting, passive heating or
+cooling, and natural ventilation.
+In sustainable architectural design, there are certain widespread building massing design strategies
+for passive energy saving, such as atriums, courtyards, and stilts. With these strategies, it is possible
+to achieve a moderate improvement in passive energy saving by following certain rules-of-thumb or
+guidelines [6]. However, the full exploitation of applying these strategies for progressive energy saving
+is not trivial. Because of the uncertainty resulting from the interaction between the climate conditions
+and the specific surrounding urban environment, the application of these strategies in building massing
+design for each project must be site-specific [7]. In this regard, a systematic exploration of a broad
+range of building massing design alternatives can help to identify the appropriate application of these
+strategies for the project.
+In the past, building massing design exploration has mostly been partial and limited as
+manually generating many different configurations and combinations of these strategies is tiring
+and time-consuming. Recent progress in parametric modelling and evolutionary optimization
+is considered a possible solution to these challenges. This allows architects to undertake
+automated performance-based optimization as a means of building massing design exploration.
+Parametric modelling allows for a design space (solution search space) to be defined, encompassing a
+large number of design variants for evolutionary optimization to explore. Evolutionary optimization
+evolves the population of building massing design and aims to identify the computed optimal solution
+with the desired energy performance [8–10].
+In the last decade, a growing body of research literature has developed around efforts to apply
+performance-based optimization to maximize the potential of building massing design in passive energy
+savings [11,12]. Despite many successful applications in the literature, applying performance-based
+optimization for building massing design exploration is still challenging. While certain barriers
+have been identified by other researchers, such as the lack of easy-to-use optimization tools and the
+problematic integration of optimization with architectural design [13–15], another critical barrier is the
+lack of topological variability among the variants offered by these techniques in the design space.
+The lack of topological variability means that the building massing design variants generated by
+the parametric model show little or no topological differentiation to the change of parameters. Thus,
+despite a large number of design variants, the design space may actually only cover a small subset of all
+possible design alternatives, which excludes many other competitive alternatives from being explored
+by the optimization process. In order to overcome the lack of topological variability in the design
+space, this research proposes a parametric algorithm to generate building massing designs based on a
+subtractive form generation principle. The process starts with a solid building block defining the basic
+volume of the building massing. By removing different parts from the building block, the generated
+building massings show significant topological variability, which can imply different configurations
+and combinations of various passive energy-saving strategies in the building massing design.
+To place the research in context, we first discuss the progress that has been made in parametric
+modelling for building massing design before going on to describe the details of the proposed algorithm.
+We then present two case studies with associated results. We conclude the paper by discussing the
+relative effectiveness of this algorithm and some limitations.
+Parametric Modelling for Building Massing Design
+Parametric models describe design by explicit rules and parameters [16]. Often, the rules encoded
+are rigorous but inflexible. This often results in the design space defining a family of design variants that
+are all very similar with limited topological variability [10,17–19]. The lack of topological variability is
+often overlooked as architects may use parametric models to describe a specific design strategy for
+each optimization. Hence, the fact that the design space only includes similar design variants is seen
+as acceptable, since they are all derived from the same strategy. A case in point is that for building
+
+Sustainability 2019, 11, 6965
+
+3 of 20
+
+massing design optimizations aimed at daylighting or passive solar energy, many researchers or
+architects create parametric models to describe building blocks with central internal courtyards [20,21].
+With such models, the shape of the courtyard can typically be changed by formal transformation
+operations, such as rotation, twisting, and slanting [22,23]. The result of the optimization may
+show remarkable improvements by identifying the fittest shape of the courtyards. However, such
+optimization nonetheless leaves many other competitive solutions unexplored, for example, the one
+characterized by features, such as stilts and solar envelopes.
+In order to overcome the lack of topological variability, other researchers have proposed
+sophisticated parametric modelling approaches to offering discrete formal variability of the generated
+building massing. One commonly used approach is to include several massing algorithms, respectively
+describing different building massing forms in one parametric model, and select one of these algorithms
+to create the building massing each time [6,24,25]. This approach is often used in design problems at the
+urban scale, and the desired urban form diversity can be simply achieved by varying permutations and
+combinations of different forms over multiple buildings. Nault et al. [6] and Xiaodong et al. [25] used
+this approach to create neighborhood-scale and urban block design based on a set of basic building
+forms for energy-daylighting optimization and outdoor thermal comfort optimization. Another
+approach is to create building massings composed of various small mass units. By arranging and
+rearranging these mass units, the algorithm can generate different spatial configurations [26–29].
+This approach is also widely used in conjunction with thermal-zone layout optimization to achieve
+better energy efficiency [30,31]. Buildings generated by this approach typically have a cellular-look
+massing. However, due to the parametric approach, the arbitrary arrangement of the mass units often
+results in many chaotic design variants [28].
+Applying the two approaches mentioned above is technically demanding and consumes a
+great amount of time and effort. The former requires laborious developments of different massing
+algorithms [19], while the latter requires complex constraint handling to ensure the designs generated
+are meaningful [28,29,31].
+Regardless of the difficulty in developing massing algorithms capable of offering desired
+topological variability, another drawback shared by common performance-based optimization exercises
+is that a large amount of parametric modelling is required for different projects. Hence, although
+there are approaches to generating building designs with high topological variability, architects may
+still struggle with such a complex parametric modelling task, which further results in significant
+interruptions to the design process. This issue has been drawing concern recently [6,19,22,32].
+The reusability of the parametric model, therefore, becomes a critical issue for minimizing the
+interruption to the design process [6,33]. Ideally, it should be possible to reuse parametric models
+in different design contexts [9,34]. However, this merit is often overshadowed as highly customized
+parametric models are often built on architects’ preferences and biases. The designs generated by such
+customized parametric models are often too specific or unique to be reused in other design contexts.
+In contrast, this research explores the idea that it may be possible to reuse a parametric model
+for different design contexts if generic design (building massing) strategies can be represented by the
+parametric model [35]. Recently, a few studies have attempted to develop design support systems,
+including predefined generic building forms, to reduce the effort and time invested in parametric
+modelling, thereby allowing architects to carry out streamlined performance-based optimization
+processes without the interruption of parametric modelling [6,25]. However, as pointed out in these
+studies, offering sufficient topological variability in the design generated, again, presents a significant
+challenge for developers.
+In contrast to the existing approaches, the proposal of using the subtractive form generation
+principle in parametric building massing algorithms may have some advantages in overcoming the
+challenges related to the lack of topological variability and low reusability:
+•
+
+First, the subtractive form generation principle is one of the most generic and widely applied
+massing strategies in architecture. This strategy can fit many different common types of building
+
+Sustainability 2019, 11, 6965
+
+•
+
+•
+
+4 of 20
+
+designs [4]. Using this principle ensures that, with simple constraints, most of the building
+massings generated have acceptable and reasonable architectural features. In addition, by
+removing different parts from a predefined building volume, the subtracted building massing can
+show great topological variability. These two advantages can efficiently overcome the weaknesses
+identified above.
+Second, many passive energy-saving strategies for building massing design, such as courtyards,
+stilts, and solar envelopes, can be schematically described as removing (subtracting) parts from
+a building block [3,35], which complies with the subtractive form generation principle. Thus,
+with different parts removed, the subtracted building massing can be recognized as different
+combinations and arrangements of these passive energy-saving strategies imposed in the building
+massing design.
+Third, the subtractive form generation approach allows for easy customization of the types of
+building design features that are generated. Architects can tune the types of features by adjusting
+various global parameters associated with the subtractors. For example, such parameters may
+include the size, position, and number of subtracting parts.
+
+2. Methods
+2.1. Overview of Proposed Algorithm
+The proposed algorithm generates building massings according to a subtractive form generation
+principle. The algorithm starts with a maximal building volume and then creates building massing
+design variants by subtracting parts of this volume. By varying the number of parts to be removed as
+well as their positions and dimensions, alternative massings with significant topological variability can
+be generated. The core of the algorithm is to define the part to be removed, which is referred to as the
+“subtractor” in this paper. The definition and formation of the subtractor consist of three basic steps:
+(1) Initialization of a maximal volume and the subtractors, (2) constraining the position and size of
+the subtractors, and (3) aligning the subtractors. In addition, there is one optional step to generate
+building cores.
+In order to be able to provide control over the features of the building massing after subtraction,
+several initialization parameters are provided. These parameters are assigned before the optimization
+process starts and remains fixed throughout the process. Other parameters, referred to as the
+optimization parameters, are changeable and modified by the evolutionary algorithm during the
+optimization processes. The initialization parameters include: (1) the dimension of the maximal
+volume, (2) the number of subtractors, (3) the size constraint of the subtractor, and (4) the boundary
+constraint regulating the relationship between subtractors and the maximal volume. The optimization
+parameters define the dimension and spatial position of each subtractor. Moreover, two optional
+initialization parameters are: (1) Specifying the footprint of the maximal volume, and (2) turning on or
+off the generation of building cores.
+Once the initialization parameters have been assigned, the algorithm can generate building
+massing variants by varying the optimization parameters list, and these variants can then be sent to
+various energy simulation tools for performance evaluation. An evolutionary algorithm can be used
+to evolve building massing designs by iteratively changing optimization parameters and receiving
+corresponding performance feedback from simulations. The overall building massing creation and
+iterative evolutionary processes are illustrated in Figure 1.
+2.2. Generative Steps
+The generative process consists of three main generative steps related to the subtractors:
+Initialization, constraints, and alignment. Finally, a fourth step can also optionally be added, to
+insert building cores.
+
+Sustainability 2019, 11, x FOR PEER REVIEW
+
+5 of 21
+
+Sustainability 2019, 11, 6965
+Sustainability 2019, 11, x FOR PEER REVIEW
+
+5 of 20
+5 of 21
+
+Figure 1. Schematic diagram of the building massing creation and evolutionary optimization process.
+
+2.2. Generative Steps
+The generative process consists of three main generative steps related to the subtractors:
+Initialization, constraints, and alignment. Finally, a fourth step can also optionally be added, to insert
+building
+cores.
+Figure
+1.1.Schematic
+Figure
+Schematicdiagram
+diagramofofthe
+thebuilding
+buildingmassing
+massingcreation
+creationand
+andevolutionary
+evolutionaryoptimization
+optimizationprocess.
+process.
+2.2.1.
+Subtractor
+Initialization
+2.2.1.
+Subtractor
+Initialization
+2.2.
+Generative
+Steps
+The
+the
+volume
+the
+The
+of
+The first
+firststep
+stepisisto
+toinitialize
+initialize
+themaximal
+maximal
+volume
+and
+thesubtractors.
+subtractors.
+The shape
+shape
+of the
+the maximal
+maximal
+The
+generative
+process
+consists
+of three
+main and
+generative
+steps related
+to the
+subtractors:
+volume
+is
+a
+rectangular
+block
+by
+default,
+and
+its
+dimension
+is
+defined
+by
+the
+number
+of
+volume
+is
+a
+rectangular
+block
+by
+default,
+and
+its
+dimension
+is
+defined
+by
+the
+number
+of
+column
+Initialization, constraints, and alignment. Finally, a fourth step can also optionally be added, tocolumn
+insert
+gridpoints
+in
+the
+xand
+y-directions
+and
+the
+number
+of
+floors
+in
+the
+z-direction
+which
+are
+assigned
+by
+gridpoints
+in the x- and y-directions and the number of floors in the z-direction, which are assigned
+building
+cores.
+architects
+in the(Figure
+initialization
+parametersthe
+(Figure
+2a). Changing
+dimensions
+allows
+different types
+by architects
+2-a). Changing
+dimensions
+allowsthe
+different
+types
+of buildings
+to be
+of
+buildings
+to
+be
+generated,
+e.g.,
+high-rise
+or
+low-rise
+buildings.
+For
+each
+building
+massing
+design
+generated,
+e.g.,
+high-rise
+or
+low-rise
+buildings.
+Two
+types
+of
+subtractors—vertical
+subtractors
+and
+2.2.1. Subtractor Initialization
+variant,
+two
+types
+of
+subtractors—vertical
+subtractors
+and
+horizontal
+subtractors—are
+created
+based
+on
+horizontal subtractors—are created based on values in the optimization parameters lists. Vertical
+The first step is to initialize the maximal volume and the subtractors. The shape of the maximal
+values
+in the have
+optimization
+Vertical
+subtractors
+havestrategies,
+an aims to create
+features
+related
+subtractors
+an aimsparameters
+to create lists.
+features
+related
+to design
+such as
+atriums
+and
+volume is a rectangular block by default, and its dimension is defined by the number of column
+to
+design strategies,
+suchIn
+as contrast,
+atriums and
+courtyards
+(Figure aim
+2b). to
+In create
+contrast,
+horizontal
+courtyards
+(Figure 2-b).
+horizontal
+subtractors
+features,
+suchsubtractors
+as stepped
+gridpoints in the x- and y-directions and the number of floors in the z-direction, which are assigned
+aim
+to create
+features,
+as stepped
+(cascade)
+roofs, empty
+floors,(Figure
+and stilts,
+the building
+massing
+(cascade)
+roofs,
+emptysuch
+floors,
+and stilts,
+in the building
+massing
+2-c).inUsing
+these two
+types
+by architects (Figure 2-a). Changing the dimensions allows different types of buildings to be
+(Figure
+2c). Using
+twomassing
+types ofisubtractors,
+theremoving
+building the
+massing
+generated
+removing
+the
+of subtractors,
+the these
+building
+generated by
+parts is
+occupied
+by by
+these
+subtractors
+generated, e.g., high-rise or low-rise buildings. Two types of subtractors—vertical subtractors and
+parts
+occupied
+by
+these
+subtractors
+from
+the
+maximal
+volume
+(Figure
+2d).
+from the maximal volume (Figure 2-d).
+horizontal subtractors—are created based on values in the optimization parameters lists. Vertical
+subtractors have an aims to create features related to design strategies, such as atriums and
+courtyards (Figure 2-b). In contrast, horizontal subtractors aim to create features, such as stepped
+(cascade) roofs, empty floors, and stilts, in the building massing (Figure 2-c). Using these two types
+of subtractors, the building massing is generated by removing the parts occupied by these subtractors
+from the maximal volume (Figure 2-d).
+Figure
+Figure 2.2. The
+The creation
+creation of
+ofthe
+thebuilding
+buildingmassing
+massingby
+bytwo
+twotypes
+typesof
+ofsubtractors:
+subtractors: (a)
+(a)generating
+generating maximal
+maximal
+volume,
+volume, (b)
+(b) vertical
+vertical subtractors,
+subtractors, (c)
+(c) horizontal
+horizontal subtractors,
+subtractors, and
+and (d)
+(d) assembling
+assembling of
+of vertical
+vertical and
+and
+horizontal
+horizontalsubtractors.
+subtractors.
+
+The number of subtractors, defined by architects, is an important factor affecting the topological
+variability of the generated building massings. Figure 3 shows the generated building massings with
+different
+of subtractors.
+It can
+be noticed
+that
+when
+the number
+subtractors
+increases,
+Figurenumbers
+2. The creation
+of the building
+massing
+by two
+types
+of subtractors:
+(a)of
+generating
+maximal
+volume, become
+(b) vertical
+subtractors,
+(c)the
+horizontal
+and (d) assembling
+of vertical
+andinto a
+subtractors
+merged
+and turn
+negativesubtractors,
+volume subtracted
+from the building
+mass
+horizontal subtractors.
+
+Sustainability 2019, 11, x FOR PEER REVIEW
+Sustainability
+Sustainability2019,
+2019,11,
+11,xxFOR
+FORPEER
+PEERREVIEW
+REVIEW
+
+6 of 21
+66of
+of21
+21
+
+The number
+of subtractors,
+defined by
+architects, is
+an important
+factor affecting
+the topological
+The
+The number
+numberof
+of subtractors,
+subtractors, defined
+definedby
+byarchitects,
+architects,is
+isan
+an important
+important factor
+factor affecting
+affecting the
+the topological
+topological
+variability of
+the generated
+building massings.
+Figure 3 shows
+the generated
+building massings
+with
+variability
+variability of
+of the
+the generated
+generated building
+building massings.
+massings. Figure
+Figure33 shows
+shows the
+the generated
+generated building
+building massings
+massings with
+with
+different
+numbers
+of
+subtractors.
+It
+can
+be
+noticed
+that
+when
+the
+number
+of
+subtractors
+increases,
+Sustainability
+2019,
+11,
+6965
+6
+of
+20
+different
+different numbers
+numbers of
+of subtractors.
+subtractors. ItIt can
+can be
+be noticed
+noticed that
+that when
+when the
+the number
+number of
+of subtractors
+subtractors increases,
+increases,
+subtractors
+become
+merged
+and
+turn
+the
+negative
+volume
+subtracted
+from
+the
+building
+mass
+into
+a
+subtractors
+subtractors become
+become merged
+merged and
+and turn
+turn the
+the negative
+negative volume
+volume subtracted
+subtracted from
+from the
+the building
+building mass
+mass into
+into aa
+complex
+topological configuration.
+By
+changing the
+number of
+subtractors,
+architects
+can control
+the
+complex
+topological
+changing
+architects
+can
+complex
+topological configuration.
+configuration. By
+By
+changing
+the
+number
+of
+subtractors,
+architects
+can
+control
+the
+complex
+topological
+configuration.
+By
+changingthe
+thenumber
+numberof
+ofsubtractors,
+subtractors,
+architects
+cancontrol
+control the
+the
+overall
+topological
+variability
+and
+configurational
+complexity
+of
+the
+generated
+building
+massings.
+overall
+overall
+topological variability
+variability and
+and configurational
+configurational complexity
+complexity of
+of the
+the generated
+generated building
+building massings.
+massings.
+overall topological
+topological
+variability
+and
+configurational
+complexity
+of
+the
+generated
+building
+massings.
+
+Figure
+Generated
+building
+massings
+based
+on
+different
+numbers
+ofsubtractors:
+subtractors:VV
+indicates
+vertical
+Figure
+3.3.
+Generated
+building
+massings
+based
+on
+different
+numbers
+of
+indicates
+vertical
+Figure
+3.
+Generated
+building
+massings
+based
+on
+different
+numbers
+of
+vertical
+Figure
+3.
+Generated
+building
+massings
+based
+on
+different
+numbers
+ofsubtractors:
+subtractors:V
+Vindicates
+indicates
+vertical
+subtractors,
+Hindicates
+indicateshorizontal
+horizontalsubtractors.
+subtractors.
+subtractors,
+H
+subtractors,
+H
+subtractors,
+H indicates
+indicates horizontal
+horizontal subtractors.
+subtractors.
+
+Asthe
+theaccumulated
+accumulatednegative
+negativevolume
+volumesubtracted
+subtracted
+byallall
+subtractors
+isisdynamically
+changed
+by
+As
+the
+accumulated
+negative
+volume
+subtracted
+subtractors
+dynamically
+changed
+As
+by
+subtractors
+is
+changed
+by
+As
+the
+accumulated
+negative
+volume
+subtracted
+byby
+allall
+subtractors
+is dynamically
+dynamically
+changed
+by
+varying
+the
+optimization
+parameters,
+the
+gross
+area
+of
+the
+subtracted
+building
+massing
+varies
+by varying
+optimization
+parameters,
+gross
+areaof
+thesubtracted
+subtractedbuilding
+building massing
+massing varies
+varies
+varying
+the
+optimization
+parameters,
+the
+gross
+area
+varying
+thethe
+optimization
+parameters,
+thethe
+gross
+area
+ofofthe
+the
+subtracted
+building
+massing
+varies
+accordingly.
+The
+gross
+area
+is
+a
+critical
+functional
+requirement
+in
+architectural
+design.
+Therefore,
+accordingly.
+The
+gross
+area
+is
+a
+critical
+functional
+requirement
+in
+architectural
+design.
+Therefore,
+accordingly.
+accordingly. The
+The gross
+gross area
+area is
+is aa critical
+critical functional
+functional requirement
+requirement in
+in architectural
+architectural design.
+design. Therefore,
+Therefore,
+althoughaa building
+a building
+massingmay
+mayhave
+have
+excellent
+energy
+performance,
+isofoflittle
+littlerelevance
+relevance
+its
+although
+excellent
+energy
+performance,
+it isititofitis
+relevance
+if its gross
+although
+massing
+excellent
+energy
+performance,
+ifififits
+although
+a building
+buildingmassing
+massingmay
+mayhave
+have
+excellent
+energy
+performance,
+islittle
+of little
+relevance
+its
+gross
+area
+is
+too
+low
+or
+too
+high.
+The
+algorithm,
+therefore,
+adjusts
+the
+maximal
+volume
+to
+create
+a
+area isarea
+too is
+low
+too or
+high.
+algorithm,
+therefore,
+adjusts adjusts
+the
+maximal
+volume volume
+to
+createto
+a building
+gross
+high.
+The
+therefore,
+the
+create
+gross
+area
+is too
+toorlow
+low
+or too
+tooThe
+high.
+The algorithm,
+algorithm,
+therefore,
+adjusts
+the maximal
+maximal
+volume
+to
+create aa
+buildingclose
+massing
+closeogross
+to a target
+gross
+area byincreasing
+iterativelyincreasing
+increasing
+ordecreasing
+decreasing
+thenumber
+number
+of
+massing
+to aclose
+target
+areagross
+by
+iteratively
+decreasing
+number the
+of
+grid
+building
+massing
+area
+or
+of
+building
+massing
+close
+to aa target
+target
+gross
+area by
+by iteratively
+iterativelyor
+increasing
+orthe
+decreasing
+thecolumn
+number
+of
+column
+grid
+spans
+and
+floors.
+With
+the
+maximal
+volume
+adjusted,
+the
+appearance
+of
+subtractors
+also
+spans and
+floors.
+With
+maximal
+adjusted,
+the appearance
+ofappearance
+subtractors of
+also
+varies as some
+column
+grid
+spans
+and
+floors.
+With
+the
+volume
+adjusted,
+also
+column
+grid
+spans
+andthe
+floors.
+Withvolume
+the maximal
+maximal
+volume
+adjusted,the
+the
+appearance
+of subtractors
+subtractors
+also
+varies
+as
+some
+subtractors
+may
+be
+deactivated
+due
+to
+the
+size
+constraint,
+which
+is
+described
+in
+Section
+subtractors
+may
+be
+deactivated
+due
+to
+the
+size
+constraint,
+which
+is
+described
+in
+Section
+2.2.2
+(Figure
+4).
+varies
+variesas
+assome
+somesubtractors
+subtractorsmay
+maybe
+bedeactivated
+deactivateddue
+dueto
+tothe
+thesize
+sizeconstraint,
+constraint,which
+whichis
+isdescribed
+describedin
+inSection
+Section
+2.2.2
+(Figure
+4).
+The
+adjustment
+of
+building
+massing
+is
+executed
+during
+the
+building
+massing
+creation
+The
+adjustment
+of
+building
+massing
+is
+executed
+during
+the
+building
+massing
+creation
+process
+and
+2.2.2
+2.2.2(Figure
+(Figure4).
+4).The
+Theadjustment
+adjustmentof
+ofbuilding
+buildingmassing
+massingis
+isexecuted
+executedduring
+duringthe
+thebuilding
+buildingmassing
+massingcreation
+creation
+process
+andis isindependent
+independent
+ofthe
+thevolutionary
+evolutionary
+optimization
+process.
+At
+thesame
+same
+time,
+inorder
+order
+to
+is
+independent
+of
+the
+evolutionary
+optimization
+process.
+At
+the
+same
+time,
+in
+order
+toin
+give
+some
+process
+and
+of
+optimization
+process.
+At
+the
+time,
+to
+process and is independent of the evolutionary optimization process. At the same time,
+in
+order
+to
+give
+somecontrol,
+additional
+control,
+architects
+are able
+to freeze
+certain (x,
+dimensions
+(x, y,
+or z).
+additional
+architects
+able to are
+freeze
+certain
+dimensions
+y, or z). (x,
+give
+some
+control,
+architects
+to
+certain
+give
+some additional
+additional
+control,are
+architects
+are able
+able
+to freeze
+freeze
+certain dimensions
+dimensions
+(x, y,
+y, or
+or z).
+z).
+
+Figure4.4.
+Generatedbuilding
+buildingmassings
+massingswith
+withdifferent
+differentarget
+targetgross
+grossareas.
+areas.
+Figure
+Generated
+Figure
+Figure 4.
+4. Generated
+Generated building
+buildingmassings
+massings with
+withdifferent
+different target
+target gross
+gross areas.
+areas.
+
+The
+aarectangular
+into
+satisfy
+Themaximal
+maximalvolume
+volumethat
+thatisis
+rectangularblock
+blockmay
+maynot
+notfitfit
+intoirregular
+irregularbuilding
+buildingplots
+plotsoror
+satisfy
+The
+Themaximal
+maximalvolume
+volumethat
+thatis
+isaarectangular
+rectangularblock
+blockmay
+maynot
+notfit
+fitinto
+intoirregular
+irregularbuilding
+buildingplots
+plotsor
+orsatisfy
+satisfy
+architectural
+intentions.
+Therefore,
+the
+algorithm
+provides
+an
+initialization
+parameter
+to
+specify
+architectural intentions.Therefore,
+Therefore, thealgorithm
+algorithm providesananinitialization
+initialization parametertotospecify
+specifythe
+the
+architectural
+architectural intentions.
+intentions. Therefore, the
+the algorithm provides
+provides an initialization parameter
+parameter to specify the
+the
+footprint
+of
+the
+maximal
+volume,
+which
+is
+achieved
+by
+removing
+a
+fixed
+part
+from
+the
+building
+footprint
+of
+the
+maximal
+volume,
+which
+is
+achieved
+by
+removing
+a
+fixed
+part
+from
+the
+building
+footprint
+footprint of
+of the
+the maximal
+maximal volume,
+volume, which
+which is
+is achieved
+achieved by
+by removing
+removing aa fixed
+fixed part
+part from
+from the
+the building
+building
+massing.
+As
+shown
+Figure5,5,this
+this
+operation
+can
+create
+maximal
+volumes
+with
+anL-shaped
+L-shaped
+massing.As
+Ashown
+shownininFigure
+this
+operation
+can
+create
+maximal
+volumes
+with
+anL-shaped
+oror
+Umassing.
+operation
+can
+create
+maximal
+volumes
+with
+an
+massing. As shown in Figure 5, this operation can create maximal volumes with an L-shaped or
+or UUU-shaped
+footprint.
+shaped footprint.
+shaped
+shaped footprint.
+footprint.
+
+Figure
+5. 5.
+Generated
+building
+massings
+withwith
+different
+footprints:
+(a) rectangular
+footprint,
+(b) L-shaped
+Figure5.
+Generated
+building
+massings
+different
+footprints:
+(a) rectangular
+footprint,
+(b) LFigure
+building
+massings
+Figure
+5. Generated
+Generated
+building
+massings with
+with different
+different footprints:
+footprints: (a)
+(a) rectangular
+rectangular footprint,
+footprint, (b)
+(b) LLfootprint,
+and
+(c)
+U-shaped
+footprint.
+shaped footprint,
+and (c)
+U-shaped footprint.
+shaped
+shaped footprint,
+footprint, and
+and (c)
+(c) U-shaped
+U-shaped footprint.
+footprint.
+
+2.2.2. Subtractor Constraints
+2.2.2. Subtractor
+Constraints
+2.2.2.
+2.2.2. Subtractor
+Subtractor Constraints
+Constraints
+The second step is to constrain the size and position of subtractors according to the values in the
+The second
+step is
+to constrain
+the size
+and position
+of subtractors
+according
+to
+the values
+in the
+The
+step
+the
+and
+of
+according
+the
+optimization
+parameters
+list.
+In order
+to
+prevent
+over-large
+or over-small
+voidsto
+from
+appearing
+in
+The second
+second
+step is
+is to
+to constrain
+constrain
+the size
+size
+and position
+position
+of subtractors
+subtractors
+according
+to
+the values
+valuesin
+in the
+the
+optimization
+parameters
+list.
+In
+order
+to
+prevent
+over-large
+or
+over-small
+voids
+from
+appearing
+in
+optimization
+parameters
+In
+to
+or
+appearing
+in
+the building massing,
+thelist.
+horizontal
+subtractors
+restricted voids
+by
+thefrom
+size constraint,
+optimization
+parameters
+list.
+In order
+orderdimension
+to prevent
+preventofover-large
+over-large
+orisover-small
+over-small
+voids
+from
+appearing by
+in
+which architects specify the upper and lower size limit of subtractors in the unit of column-grid span
+numbers. When the size of a subtractor does not satisfy the size constraints, a number of operations are
+
+Sustainability 2019, 11, x FOR PEER REVIEW
+Sustainability 2019, 11, x FOR PEER REVIEW
+
+7 of 21
+7 of 21
+
+the building massing, the horizontal dimension of subtractors is restricted by the size constraint, by
+the
+building
+massing,
+the horizontal dimension of subtractors is restricted by the size constraint,
+by
+Sustainability
+2019,
+11, 6965
+7 of
+20
+which architects
+specify the upper and lower size limit of subtractors in the unit of column-grid
+span
+which architects specify the upper and lower size limit of subtractors in the unit of column-grid span
+numbers. When the size of a subtractor does not satisfy the size constraints, a number of operations
+numbers. When the size of a subtractor does not satisfy the size constraints, a number of operations
+are to
+used to automatically
+modify
+the subtractors.
+When
+the size
+is above
+thethe
+upper
+limit, of
+the
+used
+modifymodify
+the subtractors.
+When the
+size isthe
+above
+dimension
+are
+usedautomatically
+to automatically
+the subtractors.
+When
+sizethe
+is upper
+abovelimit,
+the upper
+limit, the
+dimension
+of
+the
+subtractor
+is
+decreased
+to
+the
+upper
+limit.
+When
+the
+size
+is
+below
+the
+lower
+limit,
+the subtractor
+is decreased
+upper limit.
+sizeWhen
+is below
+limit,
+the
+subtractor
+dimension
+of the
+subtractortoisthe
+decreased
+to theWhen
+upperthe
+limit.
+thethe
+sizelower
+is below
+the
+lower
+limit,
+the
+subtractor
+is
+deactivated,
+and
+the
+corresponding
+part
+is
+not
+subtracted
+from
+the
+building
+massing
+is deactivated,
+the corresponding
+part is not subtracted
+the building
+massing
+6).
+the
+subtractor isand
+deactivated,
+and the corresponding
+part is notfrom
+subtracted
+from the
+building(Figure
+massing
+(Figure
+6).
+Note
+that
+the sizedoes
+constraint
+does notthat
+guarantee
+that all subtracting
+parts appearing
+in the
+Note
+that
+the
+size
+constraint
+not
+guarantee
+all
+subtracting
+parts
+appearing
+in
+the
+building
+(Figure 6). Note that the size constraint does not guarantee that all subtracting parts appearing in the
+building
+mass are satisfactory.
+When
+two or more subtractors
+arecan
+merged,
+it can
+turn void
+into a large
+mass
+are mass
+satisfactory.
+When twoWhen
+or more
+are merged,
+turnitinto
+large
+the
+building
+are satisfactory.
+twosubtractors
+or more subtractors
+areitmerged,
+cana turn
+into a in
+large
+void
+in
+the
+maximal
+volume
+that
+could
+exceed
+the
+upper
+boundary.
+maximal
+volume
+thatvolume
+could exceed
+the upper
+void
+in the
+maximal
+that could
+exceedboundary.
+the upper boundary.
+
+Figure 6. The size constraint in the horizontal direction: assuming the size constraint is 2 to 5, (a)
+Figure 6. The size
+horizontal
+direction:
+assuming
+the size
+constraint
+is 2 tois5,2(a)
+Figure
+sizeconstraint
+constraintininthe
+the
+horizontal
+direction:
+assuming
+the size
+constraint
+to before
+5, (a)
+before size being constrained, and (b) after size being constrained.
+size being
+and (b)and
+after
+being
+before
+size constrained,
+being constrained,
+(b)size
+after
+size constrained.
+being constrained.
+
+Aparthan
+from theuser-defined
+user-defined sizeconstraint
+constraintininthe
+thehorizontal
+horizontaldirection,
+direction,another
+anotherconstraint,
+constraint,which
+which
+Other
+Apart
+from the
+the user-defined size
+size constraint in
+the horizontal
+direction, another
+constraint, which
+is
+hard-coded
+in
+the
+algorithm,
+restricts
+the
+size
+of
+subtractors
+in
+the
+vertical
+direction.
+In
+order
+is hard-coded
+hard-coded in
+in the
+the algorithm,
+algorithm, restricts
+restricts the
+the size
+size of
+of subtractors
+subtractors in
+in the
+the vertical
+direction. In
+In order
+order to
+toto
+is
+vertical direction.
+differentiatevertical
+verticaland
+andhorizontal
+horizontalsubtractors,
+subtractors,two
+twodifferent
+differentconstraints
+constraintsare
+aresubject
+subjecttotothe
+thetwo
+twotypes
+types
+differentiate
+differentiate
+vertical and
+horizontal subtractors,
+two different
+constraints are
+subject to
+the two
+types
+of
+subtractors.
+For
+the
+vertical
+subtractors,
+the
+top
+and
+bottom
+faces
+are
+automatically
+aligned
+to
+the
+of subtractors.
+subtractors. For
+For the
+the vertical
+vertical subtractors,
+subtractors, the
+the top
+top and
+and bottom
+bottom faces
+faces are
+are automatically
+automatically aligned
+aligned to
+to the
+the
+of
+maximalvolume
+volume ifthe
+thedisplacement
+displacementbetween
+betweenthe
+theface
+faceand
+andthe
+themaximal
+maximalvolume
+volumeisisless
+lessthan
+than30%
+30%ofof
+maximal
+maximal
+volume ifif the
+displacement between
+the face
+and the
+maximal volume
+is less than
+30% of
+the
+total
+height
+of
+the
+building
+(Figure
+7-a).
+At
+the
+same
+time,
+for
+each
+vertical
+subtractor,
+at
+least
+one
+the total
+total height
+height of
+of the
+the building
+building(Figure
+(Figure7-a).
+7a). At
+At the
+the same
+same time,
+time, for
+for each
+each vertical
+vertical subtractor,
+subtractor, at
+at least
+least one
+one
+the
+face
+has
+to
+satisfy
+this
+constraint,
+or
+else
+the
+subtractor
+is
+deactivated.
+For
+horizontal
+subtractors,
+the
+face has
+has to
+to satisfy
+satisfy this
+this constraint,
+constraint, or
+or else
+else the
+the subtractor
+subtractor is
+is deactivated.
+deactivated. For
+For horizontal
+horizontal subtractors,
+subtractors, the
+the
+face
+verticalsize
+sizeofofevery
+everysubtractor
+subtractorhas
+hastotobebeless
+lessthan
+than30%
+30%ofofthe
+thetotal
+totalheight
+heightofofthe
+thebuilding
+buildingbut
+butshould
+should
+vertical
+vertical
+size of
+every subtractor
+has to
+be less than
+30% of
+the total
+height of
+the building
+but should
+also
+not
+be
+smaller
+than
+one
+floor.
+For
+any
+horizontal
+subtractors
+violating
+this
+condition,
+the
+also not
+than
+oneone
+floor.
+For any
+subtractors
+violating
+this condition,
+the algorithm
+also
+notbe
+besmaller
+smaller
+than
+floor.
+Forhorizontal
+any horizontal
+subtractors
+violating
+this condition,
+the
+algorithm
+automatically
+changes
+the
+size
+to
+make
+it
+satisfactory
+(Figure
+7-b).
+automatically
+changes the
+size to the
+make
+it to
+satisfactory
+(Figure 7b).(Figure 7-b).
+algorithm
+automatically
+changes
+size
+make it satisfactory
+
+Figure 7. The size constraint in the vertical direction.
+Figure 7. The size constraint in the vertical direction.
+Figure 7. The size constraint in the vertical direction.
+
+Apart from the size constraint, users also define the boundary constraint, which determines
+Apart from the size constraint, users also define the boundary constraint, which determines
+Apart
+from subtractors
+the size constraint,
+alsothe
+define
+constraint,
+which
+whether
+vertical
+can breakusers
+through
+outerthe
+faceboundary
+of the maximal
+volume
+in thedetermines
+horizontal
+whether vertical subtractors can break through the outer face of the maximal volume in the horizontal
+whether
+canisbreak
+throughany
+the outer
+face
+of the maximal
+volume
+direction.vertical
+When subtractors
+the constraint
+deactivated,
+face of
+a vertical
+subtractor
+close in
+to the horizontal
+face of the
+direction. When the constraint is deactivated, any face of a vertical subtractor close to the face of the
+direction.
+When the
+deactivated,
+of a vertical
+subtractor
+to theaface
+of the
+maximal volume
+is constraint
+aligned to is
+one
+of the facesany
+of face
+the maximal
+volume
+so thatclose
+it creates
+vertically
+maximal volume is aligned to one of the faces of the maximal volume so that it creates a vertically
+maximal
+aligned the
+to one
+of thevolume
+faces of(Figure
+the maximal
+it creates
+a vertically
+open voidvolume
+runningisthrough
+maximal
+8a). In volume
+contrast,so
+thethat
+boundary
+remains
+intact
+open void running through the maximal volume (Figure 8-a). In contrast, the boundary remains
+open
+running constraint
+through he
+maximal and
+volume
+(Figure subtractor
+8-a). In contrast,
+boundary
+remains
+when void
+the boundary
+is activated,
+any vertical
+close to the face
+of the maximal
+intact when the boundary constraint is activated, and any vertical subtractor close to the face of the
+intact
+when
+the boundary
+constraint
+andvolume
+any vertical
+subtractor
+close to the face of the
+volume
+is moved
+away from
+the face is
+ofactivated,
+the maximal
+(Figure
+8b).
+maximal volume is moved away from the face of the maximal volume (Figure 8-b).
+maximal
+volume isthe
+moved
+awayconstraint
+from the face
+of the
+maximal
+volume
+(Figure
+8-b).massing. Figure 9
+Deactivating
+boundary
+permits
+radical
+changes
+in the
+building
+presents generated building massings with the boundary constraint deactivated. As it can be
+seen, massing design variants consisting of two or more completely separate buildings can emerge.
+These types of massing design variants allow the optimization process to explore beyond solutions
+characterized by one building massing. Such an expansion to the solution space may benefit the
+building energy performance, for example, by allowing for inter-block shading among buildings [3].
+
+Figure2019,
+8. Generated
+Sustainability
+11, 6965 building massings with or without the boundary constraint activated: (a) the8 of 20
+Figure
+8.2019,
+Generated
+massings
+with or constraint
+without the
+boundary constraint activated: (a) the 8 of 21
+Sustainability
+11, x FORbuilding
+PEER REVIEW
+boundary
+constraint
+disabled,
+(b) the boundary
+enabled.
+boundary constraint disabled, (b) the boundary constraint enabled.
+
+Deactivating the boundary constraint permits radical changes in the building massing. Figure 9
+Deactivating
+thebuilding
+boundary
+constraint
+permits
+radical changes
+in the
+building massing.
+9
+presents generated
+massings
+with
+the boundary
+constraint
+deactivated.
+As it canFigure
+be seen,
+presents
+building
+massings
+withorthe
+boundary
+constraint
+deactivated.
+can be These
+seen,
+massinggenerated
+design variants
+consisting
+of two
+more
+completely
+separate
+buildings As
+canitemerge.
+massing
+design
+variants
+consisting
+of
+two
+or
+more
+completely
+separate
+buildings
+can
+emerge.
+These
+types of massing design variants allow the optimization process to explore beyond solutions
+types
+of massing
+design
+variants
+allow Such
+the optimization
+to explore
+beyond
+solutions
+characterized
+by one
+building
+massing.
+an expansion process
+to the solution
+space
+may benefit
+the
+characterized
+by performance,
+one building for
+massing.
+Such
+an
+expansion
+to the solution
+space
+maybuildings
+benefit the
+building
+energy
+example,
+by
+allowing
+for
+inter-block
+shading
+among
+[3].
+Figure
+building
+with or
+boundary
+Figure8.8. Generated
+buildingmassings
+orwithout
+withoutthe
+boundaryconstraint
+constraintactivated:
+activated: (a)
+(a)the
+the
+building
+energyGenerated
+performance,
+for massings
+example,with
+by allowing
+forthe
+inter-block
+shading
+among
+buildings
+[3].
+boundary
+boundaryconstraint
+constraintdisabled,
+disabled,(b)
+(b)the
+theboundary
+boundaryconstraint
+constraintenabled.
+enabled.
+
+Deactivating the boundary constraint permits radical changes in the building massing. Figure 9
+presents generated building massings with the boundary constraint deactivated. As it can be seen,
+massing design variants consisting of two or more completely separate buildings can emerge. These
+types of massing design variants allow the optimization process to explore beyond solutions
+characterized by one building massing. Such an expansion to the solution space may benefit the
+building energy performance, for example, by allowing for inter-block shading among buildings [3].
+Figure 9. Examples of massing designs generated with the boundary constraint deactivated.
+Figure9.9.Examples
+Examplesofofmassing
+massingdesigns
+designsgenerated
+generatedwith
+withthe
+theboundary
+boundaryconstraint
+constraintdeactivated.
+deactivated.
+Figure
+
+2.2.3. Subtractor
+2.2.3.
+Subtractor Alignment
+Alignment
+2.2.3. Subtractor Alignment
+Alignmentisisanan
+important
+approach
+by which
+architects
+regulate
+the massing
+to
+Alignment
+important
+approach
+by which
+architects
+regulate
+the massing
+elementselements
+to maintain
+Alignment
+is
+an
+important
+approach
+by
+which
+architects
+regulate
+the
+massing
+elements
+to
+maintain
+geometric
+order
+[35].
+However,
+arbitrary
+placements
+of
+subtractors
+can
+result
+in
+poor
+geometric order [35]. However, arbitrary placements of subtractors can result in poor alignment.
+maintain
+geometric
+ordertwo
+[35].
+However,
+arbitrary
+placements
+subtractors
+canbetween
+alignment.
+Fortwo
+example,
+subtractors
+may
+be positioned
+close of
+together,
+aresult
+space in
+between
+For
+example,
+subtractors
+may
+be positioned
+close
+together,
+creating
+acreating
+space
+thepoor
+two
+alignment.
+For
+example,
+two
+subtractors
+may
+be
+positioned
+close
+together,
+creating
+a
+space
+between
+the
+two
+subtractors
+that
+may
+be
+too
+narrow
+to
+be
+of
+any
+use.
+Thus,
+in
+the
+horizontal
+direction,
+the
+subtractors that may be too narrow to be of any use. Thus, in the horizontal direction, the parallel
+the
+two
+subtractors
+that
+may
+be
+too
+narrow
+to
+be
+of
+any
+use.
+Thus,
+in
+the
+horizontal
+direction,
+the
+parallel
+faces
+from
+different
+subtractors
+are
+aligned
+to
+be
+co-planar
+when
+the
+distance
+between
+the
+faces from different subtractors are aligned to be co-planar when the distance between the two faces is
+parallel
+faces
+from
+different
+subtractors
+are
+aligned
+to(Figure
+be co-planar
+when
+thetwo
+distance
+between
+the
+Figure
+9.than
+Examples
+massing
+designs
+generated
+with
+the10-a).
+boundary
+constraint
+deactivated.
+two than
+faces
+less
+a half
+span
+of one
+column
+grid
+the
+faces of
+two partly
+less
+aishalf
+span
+of
+oneof
+column
+grid
+(Figure
+10a).
+Similarly,
+theSimilarly,
+faces
+of
+partly
+overlapping
+two
+faces is less
+thanaligned
+a half
+ofaligned
+one column
+(Figure
+10-a).
+Similarly,
+thevoid
+faces
+of two
+partly
+overlapping
+subtractors
+arespan
+also
+in the
+same
+way to
+avoid
+small
+faces
+in the
+void
+subtractors
+are
+also
+in
+the
+same
+way
+to grid
+avoid
+small
+jagged
+faces
+in jagged
+the
+merged
+by
+two
+overlapping
+subtractors
+are
+also
+aligned
+in
+the
+same
+way
+to
+avoid
+small
+jagged
+faces
+in
+the
+void
+2.2.3.
+Subtractor
+Alignment
+merged
+by two
+more
+subtractors
+(Figure
+10-b).
+Lastly, when
+a subtractor
+has maximal
+a face close
+to the
+or
+more subtractors
+(Figure
+10b). Lastly,
+when
+a subtractor
+has a face
+close to the
+volume’s
+merged
+byvolume’s
+twoface
+or more
+subtractors
+(Figure
+10-b).
+Lastly,
+whenthat
+a subtractor
+has aNote
+face
+close
+to only
+the
+maximal
+face
+is aligned
+to
+thearchitects
+boundary
+(Figure
+10-c).
+that
+the
+last
+boundary,
+the
+aligned
+to the
+the approach
+boundary
+(Figure
+10c).
+Note
+the
+last alignment
+operation
+Alignment
+isisboundary,
+an
+important
+by which
+regulate
+the
+massing
+elements
+to
+maximal
+volume’s
+boundary,
+the
+face
+is
+aligned
+to
+the
+boundary
+(Figure
+10-c).
+Note
+that
+the
+last
+alignment
+operation
+only
+applies
+to
+vertical
+subtractors
+if
+the
+boundary
+constraint
+is
+deactivated.
+applies
+to vertical
+subtractors
+if the
+boundaryarbitrary
+constraint
+is deactivated.
+maintain
+geometric
+order [35].
+However,
+placements
+of subtractors can result in poor
+alignment operation only applies to vertical subtractors if the boundary constraint is deactivated.
+alignment. For example, two subtractors may be positioned close together, creating a space between
+the two subtractors that may be too narrow to be of any use. Thus, in the horizontal direction, the
+parallel faces from different subtractors are aligned to be co-planar when the distance between the
+two faces is less than a half span of one column grid (Figure 10-a). Similarly, the faces of two partly
+overlapping
+areof
+aligned
+the same
+way to avoid
+small(b)
+jagged
+faces
+the void
+Figure
+The procedures
+procedures
+ofalso
+alignment:
+(a)in
+aligning
+two separated
+separated
+subtractors,
+aligning
+twoin
+partly
+Figure 10.
+10.subtractors
+The
+alignment:
+(a)
+aligning
+two
+subtractors,
+(b)
+aligning
+two
+partly
+merged
+by
+or
+more subtractors
+(Figure
+10-b).two
+Lastly,
+when
+a volume.
+subtractor
+has a face
+close to the
+overlapping
+and
+(c)
+subtractor
+to
+the
+Figure
+10.two
+Thesubtractors,
+procedures
+of alignment:
+(a)aaaligning
+separated
+subtractors,
+two partly
+overlapping
+subtractors,
+and
+(c)aligning
+aligning
+subtractor
+to
+themaximal
+maximal
+volume.(b) aligning
+maximal
+volume’s
+boundary,
+thealigning
+face isa aligned
+totothe
+(Figure 10-c). Note that the last
+overlapping
+subtractors,
+and (c)
+subtractor
+theboundary
+maximal volume.
+In architectural
+apart from
+the alignment
+among
+elements,
+the is
+placement
+of the
+alignment
+operationdesign,
+only applies
+to vertical
+subtractors
+if themassing
+boundary
+constraint
+deactivated.
+In architectural
+design,
+apart from
+the alignment
+among
+massing
+elements,
+the placement
+of the
+face In
+of architectural
+massing elements
+(walls
+or
+facades)
+typically
+also
+aligns
+with
+grid
+lines
+defined
+by
+the
+modulus
+design, (walls
+apart from
+the alignment
+among
+elements,
+the placement
+of the
+face of massing elements
+or facades)
+typically
+alsomassing
+aligns with
+grid lines
+defined by
+the
+related
+to
+the column
+grid. (walls
+Hence, or
+thefacades)
+faces of all
+subtractors
+are
+aligned
+to its
+nearest
+n/4
+(n could
+be
+0)
+face
+of
+massing
+elements
+typically
+also
+aligns
+with
+grid
+lines
+defined
+by
+the
+modulus related to the column grid. Hence, the faces of all subtractors are aligned to its nearest n/4
+position in
+between
+twocolumn
+adjacent
+columns
+(Figure
+11). of
+With
+the constraints
+operations
+mentioned
+modulus
+to the
+grid.
+Hence,
+the faces
+all subtractors
+are and
+aligned
+its nearest
+n/4
+(n couldrelated
+be 0) position
+in between
+two adjacent
+columns
+(Figure 11).
+With
+thetoconstraints
+and
+above,
+many
+commonly
+unwanted
+features
+that
+may
+appear
+in
+the
+building
+massing
+when
+using
+(n
+could bementioned
+0) positionabove,
+in between
+two adjacent
+columnsfeatures
+(Figurethat
+11).may
+Withappear
+the constraints
+and
+operations
+many commonly
+unwanted
+in the building
+Sustainability
+2019, 11,approaches
+x FOR PEER REVIEW
+9 of 21
+parametric
+are excluded.
+operations
+mentioned
+above,
+many
+commonly
+massing when
+using parametric
+approaches
+areunwanted
+excluded.features that may appear in the building
+Figure 10. The procedures of alignment: (a) aligning two separated subtractors, (b) aligning two partly
+massing
+when using parametric approaches are excluded.
+overlapping subtractors, and (c) aligning a subtractor to the maximal volume.
+
+In architectural design, apart from the alignment among massing elements, the placement of the
+face of massing elements (walls or facades) typically also aligns with grid lines defined by the
+modulus related to the column grid. Hence, the faces of all subtractors are aligned to its nearest n/4
+Figure
+11.0)
+Alignment
+operation
+thetwo
+of subtractors
+the axes:
+assuming
+the constraint
+size
+(n could
+be
+position
+in of
+between
+adjacent
+(Figure
+11).
+With
+theconstraint
+constraints
+Figure
+11. Alignment
+operation
+theof
+face
+offace
+subtractors
+tocolumns
+thetoaxes:
+assuming
+the size
+is is 2 and
+to
+5,
+(a)
+before
+being
+aligned
+to
+axes,
+and
+(b)
+after
+being
+aligned
+to
+axes.
+operations
+mentioned
+above,
+many
+commonly
+unwanted
+features
+that
+may
+appear
+in
+the building
+2 to 5, (a) before being aligned to axes, and (b) after being aligned to axes.
+massing when using parametric approaches are excluded.
+Despite the fact that the number of subtractors is predefined as an initialization parameter, the
+Despite the fact that the number of subtractors is predefined as an initialization parameter, the
+various operations applied during the building massing generation process can cause the actual
+various operations applied during the building massing generation process can cause the actual
+appearance of the number of parts being subtracted from the building massing to vary significantly.
+As a result, building massing with different topological complexity can be generated, from the one
+without any part removed to that with the largest number of parts permitted removed. As such, the
+generated building massings may present various combinations and arrangements of different
+
+Figure 11. Alignment operation of the face of subtractors to the axes: assuming the size constraint is
+11. being
+Alignment
+operation
+the(b)face
+of being
+subtractors
+toto
+the
+axes: assuming the size constraint is
+2 to 5,Figure
+(a) before
+aligned
+to axes, of
+and
+after
+aligned
+axes.
+2 to 5, (a) before being aligned to axes, and (b) after being aligned to axes.
+
+Despite the fact that the number of subtractors is predefined as an initialization parameter, the
+9 of 20
+Despite the
+fact that
+the number
+of subtractors
+predefinedprocess
+as an initialization
+parameter,
+various operations
+applied
+during
+the building
+massingisgeneration
+can cause the
+actual the
+variousofoperations
+the building
+generation
+process
+cansignificantly.
+cause the actual
+appearance
+the numberapplied
+of partsduring
+being subtracted
+fromassing
+the building
+massing
+to vary
+appearance
+of
+the
+number
+of
+parts
+being
+subtracted
+from
+the
+building
+massing
+to
+vary
+significantly.
+As a appearance
+result,
+building
+massing
+with
+different
+topological
+complexity
+can
+be
+generated,
+from
+the one
+of the number of parts being subtracted from the building massing to vary significantly.
+Asaany
+aresult,
+result,
+building
+massing
+withthe
+different
+topological
+complexity
+canbe
+begenerated,
+generated,
+fromthe
+theone
+one
+without
+partbuilding
+removedmassing
+to that with
+largesttopological
+number of complexity
+parts
+permitted
+removed.
+As such,
+As
+with
+different
+can
+from
+the
+without
+any
+part
+removed
+to
+that
+with
+the
+largest
+number
+of
+parts
+permitted
+removed.
+As
+such,
+the
+generated
+building
+massings
+may
+present
+various
+combinations
+and
+arrangements
+of
+different
+without any part removed to that with the largest number of parts permitted removed. As such, the
+generated
+building
+massings
+may
+present
+various
+combinations
+and
+arrangements
+of
+different
+passive
+design building
+strategies,
+such as may
+several
+smaller
+courtyards
+or one large
+courtyard (Figure
+12). passive
+generated
+massings
+present
+various
+combinations
+and arrangements
+of different
+passivestrategies,
+design strategies,
+such assmaller
+severalcourtyards
+smaller courtyards
+or one
+large courtyard
+(Figure 12).
+design
+such as several
+or one large
+courtyard
+(Figure 12).
+Sustainability 2019, 11, 6965
+
+Figure 12. Examples of massing designs generated with the same number of subtractors.
+Figure 12. Examples of massing designs generated with the same number of subtractors.
+Figure 12. Examples of massing designs generated with the same number of subtractors.
+
+2.2.4.2.2.4.
+Building
+CoresCores
+Building
+2.2.4. Building Cores
+As widely
+applied
+totomodern
+design,building
+building
+cores
+can serve
+as circulation,
+As widely
+applied
+modern building design,
+cores
+can serve
+as circulation,
+evacuation,
+As
+widely
+applied
+to
+modern
+building
+design,
+building
+cores
+can
+serve
+as
+circulation,
+evacuation,
+and
+structural
+supports.
+In
+this
+consideration,
+the
+algorithm
+provides
+an
+optional
+and structural supports. In this consideration, the algorithm provides an optional operation
+to create
+evacuation,
+and
+supports.
+Inthese
+this
+consideration,
+the
+algorithm
+an massing
+optional
+operation
+to create
+building
+cores.for
+The
+principle
+forcores
+creating
+these
+is based of
+onprovides
+thebuilding
+footprint
+of
+building
+cores.
+Thestructural
+principle
+creating
+is based
+oncores
+the footprint
+the
+operation
+to
+create
+building
+cores.
+The
+principle
+for
+creating
+these
+cores
+is
+based
+on
+the
+footprint
+of
+the building
+massing
+and
+complies
+with
+the
+firefighting
+evacuation
+regulation
+in
+China.
+In
+China,
+and complies with the firefighting evacuation regulation in China. In China, the door-to-door distance
+the
+building
+massing
+and
+complies
+with
+the
+firefighting
+evacuation
+regulation
+in
+China.
+In
+China,
+the door-to-door
+fromevacuation
+a room to stair
+its closest
+evacuation
+and
+the in
+distance
+of any
+in exit
+from a room distance
+to its closest
+and the
+distance stair
+of any
+point
+the room
+to itspoint
+closest
+the door-to-door
+distance
+acorridors
+room
+its
+closest
+stair
+andm.
+theSince
+distance
+of
+any point
+in
+the room
+to corridors
+its closest
+exit door
+should
+beevacuation
+no proposed
+more than
+22
+door
+to
+should
+befrom
+notomore
+thanto22
+m.
+Since
+the
+algorithm
+doesthe
+notproposed
+subdivide
+the
+the
+room
+to
+its
+closest
+exit
+door
+to
+corridors
+should
+be
+no
+more
+than
+22
+m.
+Since
+the
+proposed
+algorithm
+does
+not
+subdivide
+the
+floor
+plan
+into
+rooms,
+the
+calculation
+of
+the
+number
+and
+position
+floor plan into rooms, the calculation of the number and position of the building cores is simplified to
+algorithm
+does not
+subdivide
+the
+floor
+into rooms,
+calculation
+of
+number
+and
+position
+of the
+building
+cores
+is simplified
+fulfill
+aplan
+requirement
+thatthe
+every
+face oftothe
+maximal
+volume’s
+fulfill
+a requirement
+that everyto
+face
+of the
+maximal
+volume’s
+footprint
+itsthe
+closest
+cores
+is no
+more
+of he
+isissimplified
+tocores
+fulfill
+aWhen
+requirement
+every
+face
+ofisthe
+maximalorvolume’s
+footprint
+to
+its
+cores
+no more
+than
+35 is
+m.determined,
+the position
+of the
+cores
+determined,
+the
+than
+35building
+m.closest
+Whencores
+the position
+of the
+thethat
+column
+grid
+cell
+containing
+close to
+footprint
+to containing
+its
+closest
+cores
+is notomore
+than
+35the
+m.
+When
+the
+of the
+cores
+isinto
+determined,
+the
+column
+grid
+close
+(equal
+or less
+than
+half
+of position
+the
+column-grid
+span)
+thethe
+center
+(equal
+orcell
+less
+than
+half of
+the
+column-grid
+span)
+center
+point
+of any
+core
+is turned
+building
+column
+grid
+containing
+orbuilding
+close
+togenerated,
+(equalAfter
+or less
+than
+half of
+the
+column-grid
+span)with
+theallcenter
+pointcore.
+of any
+core
+turned
+into
+core.
+building
+cores
+have
+been generated,
+After
+theiscell
+building
+coresthe
+have
+been
+allthe
+subtractors
+are
+also
+required
+to align
+these
+point
+of
+any
+core
+is
+turned
+into
+the
+building
+core.
+After
+the
+building
+cores
+have
+been
+generated,
+all
+subtractors
+are
+also
+required
+to
+align
+with
+these
+cores
+(Figure
+13).
+cores (Figure 13).
+subtractors are also required to align with these cores (Figure 13).
+
+Figure
+13. Generated
+building
+massings
+with or
+without
+building
+cores:cores:
+(a) building
+core generation
+Figure
+13. Generated
+building
+massings
+with
+or without
+building
+(a) building
+core generation
+Figure
+13.
+Generated
+building
+massings
+with
+or
+without
+building
+cores:
+(a)
+building
+core generation
+disabled,
+(b)
+building
+core
+generation
+enabled.
+disabled, (b) building core generation enabled.
+disabled, (b) building core generation enabled.
+
+2.3. Implementation
+2.3. Implementation
+2.3. Implementation
+In order
+to facilitate
+the ease
+of use,
+the algorithm
+implemented
+a plug-in
+component
+In order
+to facilitate
+the ease
+of use,
+the algorithm
+was was
+implemented
+as a as
+plug-in
+component
+In
+order
+to
+facilitate
+the
+ease
+of
+use,
+the
+algorithm
+was
+implemented
+as
+plug-in
+component
+(Figure
+14a)
+in
+Rhino-Grasshopper,
+which
+is
+one
+of
+the
+most
+popular
+3D
+and
+parametric
+modelling
+(Figure 14-a) in Rhino-Grasshopper, which is one of the most popular 3D and parametric modelling
+(Figure
+14-a) in [36].
+Rhino-Grasshopper,
+which
+is14-b)
+one of
+thewas
+most
+popular
+3D
+and
+modelling
+in architecture
+[36].
+A user
+interface
+(Figure
+14b)
+also
+integrated
+into
+the component
+toolstools
+in architecture
+A user
+interface
+(Figure
+was
+also
+integrated
+into
+theparametric
+component
+for for
+toolstoinspecify
+architecture
+[36].
+A userparameters
+interface
+(Figure
+14-b)
+was
+also
+integrated
+component
+for
+architects
+to specify
+the
+initialization
+parameters
+and
+other
+attributes
+related
+thethe
+building
+massing
+architects
+the initialization
+and other
+attributes
+related
+to thetointo
+building
+massing
+architects
+to
+specify
+the
+initialization
+parameters
+and
+other
+attributes
+related
+to
+the
+building
+massing
+design,
+as floor
+height,
+size (width),
+and facade
+types.
+the facade
+curtain
+design,
+suchsuch
+as floor
+height,
+spanspan
+size (width),
+and facade
+types.
+As toAs
+thetofacade
+type,type,
+only only
+curtain
+design,
+such
+as
+floor height,
+span size
+andimplementation,
+facade
+types. As
+towhich
+thecould
+facade
+type,
+only
+curtain
+strip
+windows
+areprovided
+provided
+in(width),
+the
+which
+be further
+expanded
+wallswalls
+andand
+strip
+windows
+are
+thecurrent
+current
+implementation,
+could
+be further
+walls
+and
+strip
+windows
+are
+provided
+in
+the
+current
+implementation,
+which
+could
+be
+further
+in
+the
+future.
+With
+the
+component
+and
+the
+user
+interface,
+architects
+can
+interact
+with
+the
+building
+expanded in the future. With the component and
+user interface, architects can interact with the
+expanded
+in the process
+future. With
+the component
+and in
+thethe
+user
+interface,
+architects
+can interact
+with
+the
+massing
+creation
+and observe
+the change
+renewed
+building
+massing
+instantly
+in the
+Rhino-Grasshopper environment. The timely visual feedback of the generated building massings
+allows architects to undertake parameter tuning to exclude unwanted or unsuitable features in the
+building massing and ensure that these features do not appear in evolutionary optimization.
+The implementation in the Rhino-Grasshopper environment takes advantage of the Visual
+Programming Language, where no coding is required. It allows architects, even computational design
+novices, to use the algorithm and establish a performance-based optimization system for building
+massing design in a plug-and-play fashion. The implementation of the proposed algorithm is part
+of an integrated evolutionary design toolkit, which also embeds a diversity-driven evolutionary
+
+Sustainability 2019, 11, x FOR PEER REVIEW
+Sustainability 2019, 11, 6965
+
+10 of 21
+10 of 20
+
+building massing creation process and observe the change in the renewed building massing instantly
+in the Rhino-Grasshopper environment. The timely visual feedback of the generated building
+algorithmallows
+[37]. As
+such, ato
+performance-based
+optimization
+canunwanted
+be established
+simply by
+massings
+architects
+undertake parameter
+tuning tosystem
+exclude
+or unsuitable
+connectingthe
+thebuilding
+component
+of this and
+building
+massing
+algorithm
+anddo
+thenot
+evolutionary
+with
+features
+massing
+ensure
+that these
+features
+appear in algorithm
+evolutionary
+various building performance simulation tools, such as DIVA, Ladybug, Honeybee, Archsim, etc. [38].
+optimization.
+
+Figure14.
+14.(a)(a)
+Component
+implemented
+Rhino-Grasshopper,(b)
+(b)the
+theuser
+userinterface.
+interface.
+Figure
+Component
+implemented
+inin
+Rhino-Grasshopper,
+
+2.4. Case Studies
+The implementation in the Rhino-Grasshopper environment takes advantage of the Visual
+Programming
+Language, where no coding is required. It allows architects, even computational
+2.4.1. Design Setting
+design novices, to use the algorithm and establish a performance-based optimization system for
+To massing
+demonstrate
+the
+of the proposed
+algorithm,
+two case-study
+performance-based
+building
+design
+in efficacy
+a plug-and-play
+fashion. The
+implementation
+of the proposed
+algorithm
+optimization
+processes
+for
+building
+massing
+design
+were
+carried
+out.
+The
+two
+case
+respectively
+is part of an integrated evolutionary design toolkit, which also mbeds a studies
+diversity-driven
+describe a high-rise
+slab-type
+building
+and a middle-rise
+deep plansystem
+building
+design
+(Figure 15).
+evolutionary
+algorithm
+[37]. As
+such, adesign
+performance-based
+optimization
+can
+be established
+The
+difference
+between
+these
+two
+building
+design
+objects
+is
+to
+clarify
+the
+capability
+of
+the
+proposed
+simply by connecting the component of this building massing algorithm and the evolutionary
+algorithm
+to
+handle
+different
+settings
+of
+building
+massing
+design.
+For
+both
+case
+studies,
+the
+energy
+algorithm with various building performance simulation tools, such as DIVA, Ladybug, Honeybee,
+performance
+objective
+maximize daylighting for passive energy savings.
+Sustainability
+11, x FORwas
+PEERtoREVIEW
+11 of 21
+Archsim,
+etc.2019,
+[38].
+
+2.4. Case Studies
+2.4.1. Design Setting
+To demonstrate the efficacy of the proposed algorithm, two case-study performance-based
+optimization processes for building massing design were carried out. The two case studies
+respectively describe a high-rise slab-type building design and a middle-rise deep plan building
+design (Figure 15). The difference between these two building design objects is to clarify the
+capability of the proposed algorithm to handle different settings of building massing design. For both
+case studies, the energy performance objective was to maximize daylighting for passive energy
+savings.
+
+Figure 15. Plan
+aerial
+view
+of of
+thethe
+building
+plot:plot:
+the orange
+blockblock
+indicates
+the building
+being
+Planand
+and
+aerial
+view
+building
+the orange
+indicates
+the building
+designed.
+being designed.
+
+The building plot for the two case studies is located at the campus of Nanjing University in
+Nanjing City, Jiangsu Province, China. Several high- and middle-rise buildings surround the building
+plot and cast shadows on the plot (Figure 16), thereby presenting a significant challenge in achieving
+desired daylighting. Without the assistance of performance-based optimization, architects may
+conceive high-performing solutions by manual trial and error. However, this is not only timeconsuming and laborious, but the solution is likely to be prejudiced due to architects’ cognitive biases.
+
+Figure 15. Plan and aerial view of the building plot: the orange block indicates the building being
+11 of 20
+designed.
+
+Sustainability 2019, 11, 6965
+
+The
+building
+for two
+the case
+two studies
+case studies
+is located
+at the campus
+of University
+Nanjing University
+The
+building
+plotplot
+for the
+is located
+at the campus
+of Nanjing
+in Nanjingin
+Nanjing
+City,
+JiangsuChina.
+Province,
+China.
+Several
+high- and middle-rise
+buildingsthe
+surround
+the
+building
+City,
+Jiangsu
+Province,
+Several
+highand middle-rise
+buildings surround
+building
+plot
+and
+plot
+and
+cast
+shadows
+on
+the
+plot
+(Figure
+16),
+thereby
+presenting
+a
+significant
+challenge
+in
+achieving
+cast shadows on the plot (Figure 16), thereby presenting a significant challenge in achieving desired
+desired daylighting.
+Without
+the assistance
+of performance-based
+optimization,
+architects
+may
+daylighting.
+Without the
+assistance
+of performance-based
+optimization,
+architects may
+conceive
+conceive high-performing
+by and
+manual
+and error.
+However,
+this is not only and
+timehigh-performing
+solutions bysolutions
+manual trial
+error.trial
+However,
+this is
+not only time-consuming
+consuming
+the to
+solution
+is likely due
+to betoprejudiced
+to architects’
+laborious,
+butand
+the laborious,
+solution isbut
+likely
+be prejudiced
+architects’due
+cognitive
+biases.cognitive biases.
+
+Figure
+16.16.
+Sun
+path
+ofof
+the
+building
+plot
+(winter
+solstice).
+Figure
+Sun
+path
+the
+building
+plot
+(winter
+solstice).
+
+For the optimization objective, the fitness evaluation considers both the energy reduction resulting
+For the optimization objective, the fitness evaluation considers both the energy reduction
+from daylighting and the gross area of the building massing. For the energy reduction from daylighting,
+resulting from daylighting and the gross area of the building massing. For the energy reduction from
+annual lighting energy (LE) consumption is taken as the performance indicator, and the general
+daylighting, annual lighting energy (LE) consumption is taken as the performance indicator, and the
+objective of the evolutionary optimization is to minimize this value. At the same time, the gross area
+general objective of the evolutionary optimization is to minimize this value. At the same time, the
+of the building massing considers a penalty function in the fitness calculation. While the proposed
+gross area of the building massing considers a penalty function in the fitness calculation. While the
+algorithm can automatically adjust the dimension and floor number of the building massing to make
+proposed algorithm can automatically adjust the dimension and floor number of the building
+the gross area close to the required target value, there could be an unacceptable gross area difference if
+massing to make the gross area close to the required target value, there could be an unacceptable
+the original difference is too large. Hence, the difference is considered a penalty function to punish
+gross area difference if the original difference is too large. Hence, the difference is considered a
+unsatisfactory design variants. In this regard, the value of lighting energy increases proportionally with
+penalty function to punish unsatisfactory design variants. In this regard, the value of lighting energy
+the increase in the difference between the actual gross area and the required gross area. Therefore, even
+increases proportionally with the increase in the difference between the actual gross area and the
+with low lighting energy, the building massing still receives an unfavorable fitness value when the gap
+required gross area. Therefore, even with low lighting energy, the building massing still receives an
+between its gross area and the target value is too large. The fitness function can be described below:
+f itness = LE × 1 + |
+
+Aactual − Atarget
+Atarget
+
+!
+| ,
+
+(1)
+
+where LE indicates the lighting energy consumption, and Aactual and ATarget indicate the actual gross
+area of the building massing and the required target gross area.
+The annual lighting energy consumption is calculated by a Radiance-based simulation tool, called
+DIVA [39], in Rhino-Grasshopper. In order to ensure each simulation can be finished in a reasonable
+timeframe, the lowest simulation quality is adopted, which means that the Radiance engine calculates
+a lower number of bounces of rays for the simulation. Using a higher quality makes the simulation
+too time-consuming, since there might be thousands of simulations involved in one evolutionary
+optimization process. Moreover, although the lowest quality degrades the accuracy of the simulation,
+the bias to the overall optimization result is not significant. This is because the fitness ranking among
+high-performing and low-performing design variants calculated by the lowest simulation quality
+corresponds to that calculated by the higher quality according to our observation. With the lowest
+simulation quality applied, each simulation lasts from 1 to 2 min (HP Z440 Workstation with a Xeon
+4-core CPU). The typical time for one evolutionary optimization process reaching the required number
+of design generations and performance evaluations (4980, to be exact, in the case study) is around 4 to
+5 days. While the time consumed by the optimization process cannot satisfy the time constraint set
+by practice, this can be addressed with an increase in computational power and incorporating other
+approaches, such as parallel computing and cloud computing.
+With regard to the optimization algorithm, the case study uses a newly developed hybrid
+evolutionary algorithm designed to support explorative design optimization, called SSIEA (steady-state
+
+Sustainability 2019, 11, 6965
+
+12 of 20
+
+island evolutionary algorithm) [37]. This algorithm can yield several high-performing solutions, while
+the solutions also have enhanced design differentiations. The algorithm integrates an island-model
+approach and a steady-state replacement strategy into a standard evolutionary algorithm to increase
+diversity in the design population and improve the search efficiency. The island model allows the
+algorithm to launch multiple parallel search processes to evolve several “niching” subpopulations.
+For each subpopulation, it is guided to focus on a different region in the design solution space.
+The separation and multitude of subpopulations counteract the exploitative natural inherited in the
+standard evolutionary algorithm and prevents the optimization from producing a family of very similar
+design solutions due to the genotypic similarity. At the same, the steady-state replacement strategy
+speeds up the optimization process by increasing the evolutionary pressure on each subpopulation. We
+examined the algorithm in a previous study [37], which indicates that this algorithm can significantly
+outperform the standard genetic algorithm. Incorporating this algorithm with the proposed building
+massing generation algorithm can retrieve several high-performing solutions from the optimization
+process. Furthermore, these solutions have significant topological differentiation due to the genotypic
+diversity in the individuals from different subpopulations. The diversity in the result enhances the
+feedback from optimization, which helps architects discover underlying compromises and trade-offs
+characterizing the design problem.
+For the setting of SSIEA, six subpopulations (islands) are set for the optimization process in
+order to achieve a relatively high diversity in the optimization result. Each subpopulation has 50
+individuals as the initial size, and, thereby, the overall initial population size is 300. In each iteration,
+10 individuals are randomly selected from each subpopulation, and six higher-ranking individuals are
+selected as parents by tournament selection to reproduce an equal number of offspring individuals by
+crossover and mutations. With all offspring individuals evaluated by simulations, the 10 originally
+selected individuals compete against the offspring individuals, and inferior ones are then replaced
+by higher-ranking offspring individuals. Lastly, 130 iterations are set as the termination criteria, so
+that there are 4980 design generations and evaluations in each optimization process as a result, which
+ensures that the design can be sufficiently evolved.
+2.4.2. Initialization Parameters
+With the proposed algorithm, the first step is to specify the initialization parameters. In order to
+widen the scope of exploration, the boundary constraint is deactivated to achieve a relatively radical
+change in the generated building massings. Then, we specify the parameters related to the attribute of
+two building massing designs, including total floor numbers, numbers of column grids in the x- and
+y- directions, floor heights, and column-grid span sizes. For the second case study, the building plot
+shown in Figure 15 is not suitable for a rectangular footprint, and, therefore, an L-shaped footprint
+is set for the maximal volume and divides the building massing into a west wing and a south wing.
+This part of the setting will be presented at the end of this section together with other initialization
+parameters in the user interface.
+Apart from the parameters mentioned specifying the attributes of the building massing design,
+we also compare three initialization parameter setups varying the size constraints and the number of
+subtractors (Table 1). For the first case study, Figure 17 illustrates the generated building massings
+for the three initialization modeling parameter setups. From the first row in Figure 17, it can be seen
+that if the number of subtractors and the size constraint are set too small, the building massings will
+not embody significant topological variability. This is despite the fact that the boundary constraint
+is deactivated, which will improve topological variability. For the other two setups, the features
+appearing in the generated building massings are mostly similar as shown in the second and third rows
+in Figure 17. Considering that a larger number of subtractors applied to the third setup expands the
+search space and increases the search difficulty for evolutionary optimization, the second initialization
+parameter setup is selected for the subsequent execution of the optimization process.
+
+deactivated, which will improve topological variability. For the other two setups, the features
+appearing in the generated building massings are mostly similar as shown in the second and third
+rows in Figure 17. Considering that a larger number of subtractors applied to the third setup expands
+the search space and increases the search difficulty for evolutionary optimization, the second
+initialization
+parameter
+Sustainability 2019,
+11, 6965 setup is selected for the subsequent execution of the optimization
+13 process.
+of 20
+Table 1. Initialization parameters.
+
+Table 1. Initialization parameters.
+
+Number of Subtractors
+Size Constraint
+Number of Subtractors
+Size Constraint
+Vertical subtractors Horizontal subtractors Vertical subtractors Horizontal subtractors
+Vertical Subtractors
+Horizontal Subtractors
+Vertical Subtractors
+Horizontal Subtractors
+Setup 1
+2
+3
+[2, 3]
+[2, 3]
+Setup 1
+2
+3
+[2, 3]
+[2, 3]
+Setup Setup
+2
+3
+4
+[3,
+4]
+2
+3
+4
+[3, 4]
+[3, 5] [3, 5]
+Setup
+3
+4
+5
+[3,
+5]
+[3, 5] [3, 5]
+Setup 3
+4
+5
+[3, 5]
+
+Figure17.
+17.Random
+Randomsampling
+sampling generated
+massings
+by the
+parameter.
+Figure
+generatedbuilding
+building
+massings
+by initialization
+the initialization
+parameter.
+
+For the second case study, Figure 18 shows the generated building massings, also based on the
+
+Forinitialization
+the secondparameter
+case study,
+Figure
+18 shows
+the
+generated
+building
+based
+three
+setups.
+In this
+case, the
+second
+setup in
+Table 1 ismassings,
+selected asalso
+it results
+in on the
+three
+initialization
+parameter
+setups.
+In this the
+case,
+the second
+setup
+in Tableby1the
+is selected
+it results
+reasonable
+topological
+variability.
+In contrast,
+generated
+building
+massings
+first setupas(the
+in reasonable
+topological
+In contrast,
+thegenerated
+generated
+bythird
+the first
+first line in Figure
+18) are variability.
+relatively similar.
+For those
+bybuilding
+the third massings
+setup (in the
+line setup
+(the
+first
+line
+in
+Figure
+18)
+are
+relatively
+similar.
+For
+those
+generated
+by
+the
+third
+setup
+(in
+the third
+in Figure 18), the possibility of creating two separate building massing entities may be not suitable for
+Sustainability
+2019,
+11,the
+x FOR
+PEER
+REVIEW
+of 21
+theinfunctional
+requirement
+in this
+case
+to thetwo
+lack of
+accessibility
+and connectivity.
+line
+Figure
+18),
+possibility
+of due
+creating
+separate
+building
+massing entities may be 14
+not
+suitable for the functional requirement in this case due to the lack of accessibility and connectivity.
+
+Figure
+sampling
+generated
+building
+massings
+by theby
+initialization
+parameter.
+Figure18.
+18.Random
+Random
+sampling
+generated
+building
+massings
+the initialization
+parameter.
+
+The process of setting up the optimization algorithm is straightforward for the user and does
+
+The process of setting up the optimization algorithm is straightforward for the user and does
+not require any parametric modelling to be performed. Instead, the user only needs to fill in certain
+not
+require any
+parametric
+modelling
+to be user
+performed.
+the user
+only
+needs
+to fill in certain
+initialization
+parameter
+settings
+in a graphical
+interfaceInstead,
+(GUI). Based
+on the
+above
+parameter
+initialization
+in astudies
+graphical
+user
+the above
+parameter
+setup, the userparameter
+interface forsettings
+the two case
+is filled
+outinterface
+as below (GUI).
+(Figure Based
+19). Theon
+difference
+in the
+setup,
+the
+user
+interface
+for
+the
+two
+case
+studies
+is
+filled
+out
+as
+below
+(Figure
+19).
+The
+difference
+in
+settings on the user interface between the two case studies is highlighted. The basic attributes specify
+the
+onrelated
+the user
+interface
+between
+two case
+is highlighted.
+basicutattributes
+the settings
+parameters
+to floor
+numbers,
+span the
+numbers,
+etc. studies
+For the second
+case study,The
+a fixed
+volume the
+in the
+building massing
+to create
+the L-shaped
+footprint.etc. For the second case study, a fixed
+specify
+parameters
+relatedistoset
+floor
+numbers,
+span numbers,
+cut volume in the building massing is set to create the L-shaped footprint.
+
+not require any parametric modelling to be performed. Instead, the user only needs to fill in certain
+initialization parameter settings in a graphical user interface (GUI). Based on the above parameter
+setup, the user interface for the two case studies is filled out as below (Figure 19). The difference in
+the settings on the user interface between the two case studies is highlighted. The basic attributes
+specify the parameters related to floor numbers, span numbers, etc. For the second case study, a fixed
+Sustainability 2019, 11, 6965
+14 of 20
+cut volume in the building massing is set to create the L-shaped footprint.
+
+Figure 19. The
+The setting
+setting on
+on the
+the user
+user interface.
+interface.
+
+3. Results
+Results
+3.
+3.1. Case Study 1
+3.1. Case Study 1
+The first case study describes a slab-type high-rise office building with a target gross area of
+The 2first case study describes a slab-type high-rise office building with a target gross area of
+45,000 m . We take the building massing shown in Figure 15 without any part removed as the
+45,000 m2. We take the building massing shown in Figure 15 without 2any part removed as the
+benchmark. The gross area of the benchmark building massing is 43,740 m . The LE of the benchmark
+benchmark. The gross area of the benchmark building massing is 43,740 m2. The LE of the benchmark
+building massing is 813,811 kWh, and the fitness after being penalized by the gross area difference is
+building massing is 813,811 kWh, and the fitness after being penalized by the gross area difference is
+836,597.
+836,597.
+Figure 20 shows the elite individual in each subpopulation found by the optimization process.
+Figure 20 shows the elite individual in each subpopulation found by the optimization process.
+In this case study, the surrounding buildings prevent a large amount of daylight from reaching the
+In this case study, the surrounding buildings prevent a large amount of daylight from reaching the
+building massing (Figure 16) and cast shadows on the facade of the building, which can undermine
+building massing (Figure 16) and cast shadows on the facade of the building, which can undermine
+the daylighting quality on the floor with windows frequently shaded by the shadow. In order to
+the daylighting quality on the floor with windows frequently shaded by the shadow. In order to
+improve daylighting, three dominant features can be found among elite individuals. First, stilts appear
+improve daylighting, three dominant features can be found among elite individuals. First, stilts
+in the building massing of Elite1, Elite4, and Elite5, which raise the overall building mass. Raising the
+appear in the building massing of Elite1, Elite4, and Elite5, which raise the overall building mass.
+building mass reduces the space close to the ground, which naturally has worse daylighting quality
+Raising the building mass reduces the space close to the ground, which naturally has worse
+Sustainability
+2019,
+11, x FORobstructions
+PEER REVIEWby the surrounding buildings.
+15 of 21
+due
+to heavy
+daylight
+daylighting quality due to heavy daylight obstructions by the surrounding buildings.
+
+Figure 20. Elite individuals of natural daylighting (south-west aerial view).
+view).
+
+Second,
+cases, such
+suchasasElite2,
+Elite2,Elite5,
+Elite5,
+and
+Elite6,
+appear
+a tower-type
+building
+massing.
+Second, cases,
+and
+Elite6,
+appear
+as aastower-type
+building
+massing.
+The
+The
+reason
+for
+this
+is
+that
+tower-type
+building
+massing
+increases
+the
+indoor
+floor
+area
+at
+a
+higher
+reason for this is that tower-type building massing increases the indoor floor area at a higher altitude
+altitude
+where
+there
+aredaylight
+fewer daylight
+obstructions
+to surrounding
+buildings.
+Figure
+21 illustrates
+where there
+are
+fewer
+obstructions
+due todue
+surrounding
+buildings.
+Figure
+21 illustrates
+the
+the
+natural
+lit
+space
+in
+a
+cross-sectional
+direction.
+Note
+that
+the
+natural-lit
+space
+(warmer
+red-colored
+natural lit space in a cross-sectional direction. Note that the natural-lit space (warmer red-colored
+areas)
+The first
+areas) increases
+increases as
+as the
+the floor
+floor level
+level is
+is raised.
+raised. The
+first and
+and second
+second features
+features suggest
+suggest that
+that the
+the overall
+overall
+performance
+performance of
+of daylighting
+daylighting can
+can be
+be improved
+improved by
+by manipulating
+manipulating the
+the building
+building massing
+massing in
+in the
+the vertical
+vertical
+direction—either
+proportion
+of lower
+floor levels
+in Elite1
+or increasing
+the proportion
+direction—eitherreducing
+reducingthethe
+proportion
+of lower
+floor as
+levels
+as in
+Elite1 or increasing
+the
+of
+higher
+floor
+levels
+as
+in
+Elite6.
+In
+contrast,
+the
+third
+feature
+manipulates
+the
+building
+massing
+in
+proportion of higher floor levels as in Elite6. In contrast, the third feature manipulates the
+building
+the
+horizontal
+elite individuals
+tend to havetend
+a stepped
+can enlarge
+the
+massing
+in thedirection.
+horizontalAll
+direction.
+All elite individuals
+to havefootprint,
+a steppedwhich
+footprint,
+which can
+spacing
+with
+the
+south
+high-rise
+building
+as
+well
+as
+increase
+the
+facade
+area
+exposed
+to
+daylight
+[40].
+enlarge the spacing with the south high-rise building as well as increase the facade area exposed to
+The [40].
+effect of the optimization on daylighting is significant. The elites achieve an average 96%
+daylight
+improvement compared with the benchmark building massing. It means that, for this case study,
+the performance of daylighting is sensitive to the change in the building massing. This finding also
+suggests that while there is great potential in building massing design to achieve better daylighting,
+
+where there are fewer daylight obstructions due to surrounding buildings. Figure 21 illustrates the
+natural lit space in a cross-sectional direction. Note that the natural-lit space (warmer red-colored
+areas) increases as the floor level is raised. The first and second features suggest that the overall
+performance
+of daylighting can be improved by manipulating the building massing in the
+vertical
+Sustainability 2019, 11, 6965
+15 of 20
+direction—either reducing the proportion of lower floor levels as in Elite1 or increasing the
+proportion of higher floor levels as in Elite6. In contrast, the third feature manipulates the building
+inappropriate
+building massing
+design
+lead to much
+intensive
+energy
+consumption.
+massing
+in the horizontal
+direction.
+All can
+elitealso
+individuals
+tend
+to havelighting
+a stepped
+footprint,
+which can
+Lastly, the elites with a tower-like massing may be inappropriate when a rigorous urban planning
+enlarge the spacing with the south high-rise building as well as increase the facade area exposed to
+code regulates the height of the building. However, this helps to enhance the tendency of raising the
+daylight [40].
+building massing for better daylighting for this case study.
+
+Figure 21.
+21. Daylight
+Daylight autonomy
+by by
+floors.
+Figure
+autonomyanalysis
+analysis
+floors.
+
+3.2. Case Study 2
+
+The effect of the optimization on daylighting is significant. The elites achieve an average 96%
+The second
+case study
+a middle-rise
+deep-plan
+building
+for multi-purpose
+use study,
+with the
+improvement
+compared
+withdescribes
+the2 benchmark
+building
+massing.
+It means
+that, for this case
+a target gross area of 100,000 m . Similar to the first case study, the building massing without any
+performance of daylighting is sensitive to the change in the building massing. This finding also
+part removed is taken as the benchmark, as shown in Figure 15. The gross area of the benchmark
+suggests that while there is great
+potential in building massing design to achieve better daylighting,
+building massing is 102,332 m2 . The LE of the benchmark building massing is 1.9334 × 106 kWh, and
+inappropriate
+building
+can also
+toismuch
+lighting with
+energy
+the fitness after
+being massing
+penalizeddesign
+by the gross
+arealead
+factor
+1.9785intensive
+× 106 . Compared
+the consumption.
+first case
+Lastly,
+the
+elites
+with
+a
+tower-like
+massing
+may
+be
+inappropriate
+when
+a
+rigorous
+urban
+planning
+study, the change in the building plot allows the south wing of the building to be exposed
+to direct
+code
+regulates
+the height
+of thebybuilding.
+However,
+this16).
+helps
+tothe
+enhance
+themassing
+tendency
+of raising
+sunlight
+without
+obstructions
+other buildings
+(Figure
+Thus,
+building
+should
+react the
+building
+massing
+for better
+daylighting
+for this case study.
+differently
+compared
+with the
+first case study.
+Figure 22 shows the elite individual in each subpopulation. As the deep-plan building is
+3.2. unfavorable
+Case Study 2to daylighting, a common approach reflected in the elite building massing to overcome
+this drawback is to reduce the depth of the floor plan by inserting subtractors. This approach can result
+The second case study describes a middle-rise deep-plan building for multi-purpose use with a
+in two dominant features found among these elite building massings. First, light wells appear in Elite1
+target
+of 100,000
+m2. Similar
+to the
+theinner
+first case
+study,
+the building
+massing
+andgross
+Elite5,area
+which
+allow daylight
+to reach
+part of
+the building.
+Second,
+there iswithout
+a setbackany
+in part
+removed
+is
+taken
+as
+the
+benchmark,
+as
+shown
+in
+Figure
+15.
+The
+gross
+area
+of
+the
+benchmark
+building
+the south wing of the building massing (the blue-colored volume shown in Figure 23), which allows
+6 kWh, and the fitness
+massing
+is 102332
+m2. Thethinner
+LE of the
+building
+is 1.9334
+× 10high-rise
+the floor
+plan to become
+and benchmark
+escape from the
+shadowmassing
+cast by the
+south-west
+building.
+6
+Apart
+from
+these twoby
+features,
+horizontal
+carve-outs
+appearing
+the south wing
+Elite1
+and
+stepped
+after
+being
+penalized
+the gross
+area factor
+is 1.9785
+× 10 .inCompared
+withofthe
+first
+case
+study, the
+roofs
+in
+Elite6
+also
+help
+to
+reduce
+the
+depth
+of
+the
+floor
+plan
+and
+increases
+the
+facade
+area
+exposed
+to
+change in the building plot allows the south wing of the building to be exposed to direct sunlight
+daylight.
+Similar to the
+casebuildings
+study, stilts(Figure
+also appear
+Elite1 the
+and Elite4
+due to
+the sameshould
+reason react
+without
+obstructions
+by first
+other
+16). inThus,
+building
+massing
+explained
+in
+the
+first
+case
+study.
+differently compared with the first case study.
+In summary, the elite building massing achieves an average 95.6% improvement in the overall
+Figure
+22 shows the elite individual in each subpopulation. As the deep-plan building is
+performance compared with the benchmark building massing. Concerning the features, thin plans
+unfavorable to daylighting, a common approach reflected in the elite building massing to overcome
+stand out in this case study as deep-plan buildings are naturally inferior in daylighting performance.
+thisIndrawback
+is to reduce the depth of the floor plan by inserting subtractors. This approach can
+contrast, courtyards, as a commonly adopted strategy for daylighting, do not appear in this case
+study, which is mostly because a courtyard often occupies a large amount of building floor area, and
+its contribution is not sufficiently significant to offset its disadvantage of a loss of floor area. Last, but
+not least, Elite1 shows a mixture of different passive energy-saving strategies, including self-shading,
+stilts, and light wells. It suggests that synergizing these strategies allows for significant progressive
+improvement. Such mixtures of strategies are challenging to conceive by human architects and unlikely
+to be found when the optimization is confined to building massing with limited topological variability.
+
+setback in the south wing of the building massing (the blue-colored volume shown in Figure 23),
+which allows the floor plan to become thinner and escape from the shadow cast by the south-west
+which allows the floor plan to become thinner and escape from the shadow cast by the south-west
+high-rise building. Apart from these two features, horizontal carve-outs appearing in the south wing
+high-rise building. Apart from these two features, horizontal carve-outs appearing in the south wing
+of Elite1 and stepped roofs in Elite6 also help to reduce the depth of the floor plan and increases the
+of Elite1 and stepped roofs in Elite6 also help to reduce the depth of the floor plan and increases the
+facade area exposed to daylight. Similar to the first case study, stilts also appear in Elite1 and Elite4
+facade area2019,
+exposed
+to daylight. Similar to the first case study, stilts also appear in Elite1 and 16
+Elite4
+Sustainability
+6965 explained in the first case study.
+of 20
+due
+to the same 11,
+reason
+due to the same reason explained in the first case study.
+
+Figure 22. Elite individuals of daylighting (south-east aerial view).
+Figure 22. Elite individuals of daylighting (south-east aerial view).
+
+Figure23.
+23.Set-back
+Set-backininthe
+thesouth
+southwing
+wingofofthe
+thebuilding
+buildingmassing
+massing(south-east
+(south-eastaerial
+aerialview).
+view).
+Figure
+Figure 23. Set-back in the south wing of the building massing (south-east aerial view).
+
+4. Discussion
+In summary, the elite building massing achieves an average 95.6% improvement in the overall
+In summary,
+elite allowed
+buildingthe
+massing
+achieves
+an averagealgorithm
+95.6% improvement
+in the overall
+The
+twocompared
+case the
+studies
+efficacy
+of the massing.
+proposed
+investigated
+under
+performance
+with the benchmark
+building
+Concerning to
+thebefeatures,
+thin plans
+performance
+compared
+with
+the
+benchmark
+building
+massing.
+Concerning
+the
+features,
+thin plans
+different
+design
+settings,
+in
+terms
+of
+surrounding
+buildings
+and
+building
+design
+objects.
+Strengthened
+by
+stand out in this case study as deep-plan buildings are naturally inferior in daylighting performance.
+stand
+out
+in
+this
+case
+study
+as
+deep-plan
+buildings
+are
+naturally
+inferior
+in
+daylighting
+performance.
+explorative
+characterasofa the
+proposedadopted
+evolutionary
+algorithm,
+the optimization
+processin
+successfully
+Inthe
+contrast,
+courtyards,
+commonly
+strategy
+for daylighting,
+do not appear
+this case
+In contrast,
+courtyards,
+as
+a commonly
+adopted
+strategy
+forand
+daylighting,
+do not appear
+in this case
+explored
+and
+different
+building
+massing
+variants
+identified
+study,
+which
+isevaluated
+mostly because
+a courtyard
+often occupies
+a large
+amount ofmultiple
+buildinghigh-performing
+floor area, and
+study, which
+is mostly
+because
+a courtyard
+often occupies
+a large amount
+of building
+floor massings
+area, and
+solutions
+for each
+design
+scenario.
+Due to the
+topological
+variability,
+building
+its
+contribution
+is not
+sufficiently
+significant
+to extensive
+offset its disadvantage
+of loss ofthe
+floor
+area. Last,
+but
+its contribution
+is not
+sufficiently
+significant
+to offset its disadvantage
+of aThe
+lossdifference
+of floor area.
+Last,
+but
+retrieved
+from shows
+the
+optimization
+present
+significant
+differentiation.
+among
+these
+not
+least, Elite1
+a mixture of
+different
+passive design
+energy-saving
+strategies,
+including self-shading,
+not
+least,
+Elite1
+shows
+a
+mixture
+of
+different
+passive
+energy-saving
+strategies,
+including
+self-shading,
+elite and
+variants
+performance
+trade-offs
+and
+compromises.
+At significant
+the same time,
+without
+stilts,
+lighthelps
+wells.toItreveal
+suggests
+that synergizing
+these
+strategies
+allows for
+progressive
+stilts,
+andtolight
+wells.
+It suggests
+that synergizing
+these
+strategies
+allows
+for out
+significant
+progressive
+the
+need
+perform
+any
+actual
+parametric
+modelling,
+the
+process
+of
+carrying
+performance-based
+improvement. Such mixtures of strategies are challenging to conceive by human architects and
+improvement.is streamlined.
+Such mixtures of strategies
+are challenging
+conceive byparameters
+human architects
+optimization
+onlyisneed
+to specify
+thetoinitialization
+restrictand
+the
+unlikely
+to be found when theArchitects
+optimization
+confined
+to building
+massing with limitedto
+topological
+unlikely
+to
+be
+found
+when
+the
+optimization
+is
+confined
+to
+building
+massing
+with
+limited
+topological
+overall
+geometric
+feature
+in
+the
+generated
+building
+massings.
+In
+this
+regard,
+the
+parametric
+model
+variability.
+variability.
+based
+on the algorithm can be viewed as a “meta-model” of the subtractive form generation principle,
+which various task-specific versioning models for different projects can be readily derived.
+4.from
+Discussion
+4. Discussion
+While the proposed algorithm addresses the two challenges identified in the first section, there are
+The two case studies allowed the efficacy of the proposed algorithm to be investigated under
+case
+allowed
+efficacy ofFirst,
+the proposed
+algorithm
+tomassings
+be investigated
+under
+threeThe
+key two
+issues
+andstudies
+limitations
+to bethe
+highlighted.
+the generated
+building
+are all created
+different design settings, in terms of surrounding buildings and building design objects.
+different
+design geometries.
+settings, inIn terms
+of surrounding
+buildings and
+building
+design
+objects.
+from
+orthogonal
+this regard,
+the optimization-based
+exploration
+with
+the proposed
+Strengthened by the explorative character of the proposed evolutionary algorithm, the optimization
+Strengthened
+explorative
+character
+of theof
+proposed
+evolutionary
+algorithm,
+the optimization
+algorithm
+canby
+bethe
+seen
+as an initial
+exploration
+diverse building
+massings
+but without
+in-depth
+process successfully explored and evaluated different building massing variants and identified
+process successfully
+explored
+and evaluated
+different
+and identified
+exploitation
+of the accurate
+solution
+under each
+specificbuilding
+building massing
+massing variants
+configuration.
+In other
+multiple high-performing solutions for each design scenario. Due to the extensive topological
+multiple
+solutionscan
+forbeeach
+design
+scenario.
+Duegeometric
+to the extensive
+topological
+words,
+thehigh-performing
+result of the optimization
+further
+improved
+if higher
+freedom is
+provided
+variability, the building massings retrieved from the optimization present significant design
+variability,
+the building
+massings
+retrieved
+the rotation,
+optimization
+present
+significant
+design
+by
+incorporating
+transformation
+approaches,
+suchfrom
+as twist,
+and slant
+[22,23,41].
+Incorporating
+differentiation. The difference among these elite variants helps to reveal performance trade-offs and
+differentiation.
+The difference
+thesevariables
+elite variants
+helpstransformation
+to reveal performance
+trade-offs
+these
+in the algorithm
+requiresamong
+additional
+to define
+operations.
+Sinceand
+the
+compromises. At the same time, without the need to perform any actual parametric modelling, the
+compromises.
+At the
+time, without
+the need
+to perform any
+actual parametric
+modelling,
+the
+algorithm
+already
+hassame
+a relatively
+large number
+of optimization
+parameters,
+adding extra
+parameters
+process of carrying out performance-based optimization is streamlined. Architects only need to
+process
+of carrying
+outhe
+performance-based
+optimization
+is streamlined.
+Architects
+need to
+may
+be ineffective
+since
+increase in the size of
+the design solution
+space often
+impedes only
+the discovery
+specify the initialization parameters to restrict the overall geometric feature in the generated building
+specify
+the initialization
+parameters
+to restrict
+overall
+geometric
+feature in
+generated building
+of
+high-performing
+solutions
+[28]. Instead,
+it isthe
+more
+advisable
+to separate
+thethe
+optimization
+process
+massings. In this regard, the parametric model based on the algorithm can be viewed as a “metamassings.
+In thisInregard,
+the
+parametric
+model
+basedmassing
+on the algorithm
+can be while,
+viewedinas
+“metainto
+two stages.
+the first
+stage,
+the coarse
+building
+can be explored
+thea second
+model” of the subtractive form generation principle, from which various task-specific versioning
+model”
+of thenumber
+subtractive
+form generation
+principle,
+which various
+task-specific
+versioning
+stage,
+a small
+of massings
+reflecting the
+specific from
+architectural
+implications
+can be selected,
+and
+models for different projects can be readily derived.
+models for different
+projects
+be be
+readily
+derived.
+transformation
+operations
+cancan
+then
+applied
+to evolve more in-depth solutions.
+Second, in the context of evolutionary optimization, the arbitrary placement of subtractors creates
+a many-to-one relationship between the optimization parameters lists and the corresponding output.
+This relationship defines the genotype–phenotype mapping. For example, although two design
+variants (phenotypes) have similar topological configurations, the two variants could be generated
+from two entirely different optimization parameter lists (genotypes). This is because the two different
+parameter lists contain the segment (chromosomes) at different positions with similar or identical
+values, and this segment results in a subtractor in similar spatial positions and with similar dimensions.
+
+creates a many-to-one relationship between the optimization parameters lists and the corresponding
+output. This relationship defines the genotype–phenotype mapping. For example, although two
+design variants (phenotypes) have similar topological configurations, the two variants could be
+generated from two entirely different optimization parameter lists (genotypes). This is because the
+two different parameter lists contain the segment (chromosomes) at different positions with similar
+Sustainability 2019, 11, 6965
+17 of 20
+or identical values, and this segment results in a subtractor in similar spatial positions and with
+similar dimensions. Figure 24 shows the parallel coordinate visualizing the parameter lists of the elite
+design 24
+variants.
+Compared
+with the similarity
+the formal
+(phenotypic
+Figure
+shows the
+parallel coordinate
+visualizingamong
+the parameter
+listsrepresentations
+of the elite design
+variants.
+representation),
+as similarity
+shown in among
+Figure 20
+Figure
+22, the parameter
+lists (genotypic
+representation)
+Compared
+with the
+theand
+formal
+representations
+(phenotypic
+representation),
+as shown
+doFigures
+not show
+mapping could
+problematic
+for evolutionary
+in
+20 equivalent
+and 22, the similarity.
+parameter This
+lists many-to-one
+(genotypic representation)
+dobe
+not
+show equivalent
+similarity.
+optimization
+as itmapping
+may result
+in early
+entrapmentfor
+into
+a local optimum
+[28]. However,
+inresult
+this research,
+This
+many-to-one
+could
+be problematic
+evolutionary
+optimization
+as it may
+in early
+the many-to-one
+may [28].
+help However,
+to clarify in
+dominant
+features
+when these features
+entrapment
+into a mapping
+local optimum
+this research,
+the many-to-one
+mappingrepeatedly
+may help
+appear
+many subpopulations.
+to
+clarifyindominant
+features when these features repeatedly appear in many subpopulations.
+
+Figure
+Figure 24.
+24. Parallel
+Parallel coordinate
+coordinate visualizing
+visualizing the
+the parameters
+parameters of
+of elite
+elite design
+design variants.
+variants.
+
+Third,
+of considering
+consideringone
+oneobjective
+objectiveasasinin
+the
+case
+studies,
+architects
+alternatively
+Third, instead
+instead of
+the
+case
+studies,
+architects
+cancan
+alternatively
+use
+use
+multi-objective
+approaches,
+such
+as
+Pareto
+optimization,
+to
+include
+multiple
+objectives.
+multi-objective approaches, such as Pareto optimization, to include multiple objectives. Using multiUsing
+multi-objective
+optimization
+can show trade-offs
+and compromises
+among conflicting
+objectives.
+objective
+optimization
+can show trade-offs
+and compromises
+among conflicting
+objectives.
+While
+While
+using
+multi-objective
+optimization
+has
+become
+popular
+in
+the
+literature,
+it
+should
+be
+noted
+using multi-objective optimization has become popular in the literature, it should be noted that it
+that
+may result
+in a reduction
+the search
+efficiency
+of the
+evolutionary
+optimization
+process
+[42].
+mayitresult
+in a reduction
+in theinsearch
+efficiency
+of the
+evolutionary
+optimization
+process
+[42].
+In
+In
+addition,
+resultofofmulti-objective
+multi-objectiveoptimization
+optimizationblends
+blendsfeatures
+featuresrelated
+related to
+to conflicting
+conflicting objectives,
+addition,
+thethe
+result
+objectives,
+which
+which could
+could make
+make itit difficult
+difficult to
+to identify
+identify the
+the dominant
+dominant feature
+feature related
+related to
+to each
+each objective
+objective as
+as clearly
+clearly as
+as
+shown
+shown in
+in the
+the case
+casestudies
+studiesof
+ofthis
+thisresearch.
+research.
+Last,
+issues
+andand
+limitations
+mentioned
+above,
+there there
+are two
+other
+related
+Last,apart
+apartfrom
+fromthethe
+issues
+limitations
+mentioned
+above,
+are
+twodirections
+other directions
+to
+the
+algorithm
+itself
+that
+can
+be
+considered
+in
+future
+research.
+First,
+when
+considering
+the
+energy
+related to the algorithm itself that can be considered in future research. First, when considering the
+consumption of air conditioning, the partition on the floor plan of rooms is critical to producing accurate
+simulation results. While there is a technique to conduct simple thermal zoning by a straight-skeleton
+subdivision [43], grammar approaches [44] allow for a more realistic approximation of the subdivision
+of rooms. These techniques can be integrated into the algorithm. Second, increasing the degree of
+customization can allow the algorithm to satisfy more specific design settings. For example:
+•
+•
+•
+
+More complex shapes for the maximal volume beyond box-like masses to make possible
+combinations, such as towers and podiums and non-orthogonal geometries.
+Provide more practical user-defined constraints to regulate the overall building massing, such as
+maximum height, width, and length of the building massing.
+Provide additional placement strategies of building cores, such as placing the cores at corners
+rather than in the center of the building.
+
+5. Conclusions
+The focus of this research was to develop a reusable algorithm that generates building massing
+with extensive topological variability to help architects conduct explorative and non-disruptive
+performance-based optimization. The underlying intention of the research was to use optimization
+as a means of exploiting the potential in building massing design for passive energy savings at the
+outset of design processes. This process can narrow down the scope of consideration for architects,
+thereby facilitating knowledge extraction for performance-aware design processes. At the same time,
+
+Sustainability 2019, 11, 6965
+
+18 of 20
+
+what is indispensable is that such optimization-based exploration should be well integrated into the
+architectural design process.
+For the algorithm focusing on design exploration rather than providing direct solutions, we
+acknowledge that the building massing found by the case-study optimization may not satisfy all
+aspects of architectural design [16,45]. Instead, in the data-poor situation of conceptual design stages,
+the solution retrieved from the optimization plays a role as the “medium of reflection” in design
+processes and allows architects to draw inspiration from its result [13]. In this regard, the use of the
+subtractive form generation principle has the advantage that the architectural implication revealed by
+the optimization result is intuitive and cognizable, which facilitates architects’ gaining insight from the
+optimization results.
+Driven by the optimization process, subtractors are manipulated only to remove volume from the
+building massing that contributes to the most dominant and profitable effect on the improvement in
+the building energy performance. It is evident that compared with the random sampling alternatives
+in Figures 17 and 18, irrelevant and unnecessary voids appearing in those sampling alternatives
+were mostly discarded and excluded across the optimization process. With minimal redundant
+information, architects’ focus can remain on the dominant building massing characters and the
+associative architectural implications related to building energy performance. In contrast, ambiguity and
+distractions may happen if the geometry of the building massing is too complex. Desired architectural
+implications could be misled by other less relevant issues.
+In order to maximize the utility of performance-based optimization to assist architects in achieving
+compelling energy sustainability, the proposed algorithm provides an unconventional approach to
+using such optimization in conceptual design processes. Without parametric modelling, using the
+algorithm encourages architects to leverage optimization processes to explore unknown solutions
+and collect feedback related to various building energy performance factors at the outset of the
+design process. In contrast, conventional performance-based optimization is only carried out after
+the stage of design ideation and concept development. However, when the design concept is already
+predetermined in building massing design, the room for performance improvements is limited. More
+importantly, for those concepts developed in the data-poor situations of early design stages, these
+concepts could be problematic and may result in flaws, which “can rarely be compensated at later
+design stages and incurs a great redesign expense” [46]. In contrast, the proposed algorithm allows for
+early interventions of performance-based optimization before and during concept development stages.
+Such interventions increase architects’ awareness of building energy performance, thereby reducing
+the possibility of a poor decision being made during the building massing design stages. The increased
+awareness also allows architects to extrapolate the trajectory beyond the possibilities explored by the
+optimization process, thereby driving the design towards a desired environmental-friendly solution.
+Author Contributions: Conceptualization, L.W., P.J. and K.W.C.; methodology, L.W.; software, L.W.; resources,
+G.J.; writing—original draft preparation, L.W.; writing—review and editing, K.W.C., P.J. and Z.T.; supervision,
+G.J.; funding acquisition, Z.T. and G.J.
+Funding: The work described in this study was sponsored by the projects of the National Natural Science
+Foundation of China (NSFC#51578277) and (NSFC#51378248).
+Acknowledgments: The authors would like to thank anonymous reviewers, editors, Zhonggao Chen, and
+Hyoung-June Park for their detailed and valued comments and suggestions. A warm acknowledgment is given to
+Derek Pung Shuai Shi for his kind help to this research.
+Conflicts of Interest: The authors declare no conflict of interest.
+
+References
+1.
+2.
+
+Shi, X. Performance-Based and Performance-Driven Architectural Design and Optimization. Front. Archit.
+Civ. Eng. China 2010, 4, 512–518. [CrossRef]
+Kolarevic, B.B.; Malkawi, A. Performative Architecture: Beyond Instrumentality; Spon Press: New York, NY,
+USA, 2005.
+
+Sustainability 2019, 11, 6965
+
+3.
+4.
+5.
+6.
+
+7.
+8.
+9.
+10.
+11.
+12.
+13.
+14.
+15.
+
+16.
+
+17.
+
+18.
+19.
+20.
+21.
+22.
+23.
+
+24.
+25.
+
+26.
+
+19 of 20
+
+DeKay, M.; Brown, G.Z. Sun, Wind, and Light: Architectural Design Strategies, 2nd ed.; John Wiley & Sons:
+Hoboken, NJ, USA, 2014.
+Simitch, A.; Warke, V. The Language of Architecture: 26 Principles Every Architect Should Know; Rockport Pub:
+Beverly, MA, USA, 2014.
+McMullan, R. Environmental Science in Building, 4th ed.; Palgrave Macmillan Education: London, UK, 1998.
+Nault, E.; Waibel, C.; Carmeliet, J.; Andersen, M. Development and Test Application of the UrbanSOLve
+Decision-Support Prototype for Early-Stage Neighborhood Design. Build. Environ. 2018, 137, 58–72.
+[CrossRef]
+Yi, Y.K.; Malkawi, A.M. Site-Specific Optimal Energy Form Generation Based on Hierarchical Geometry
+Relation. Autom. Constr. 2012, 26, 77–91. [CrossRef]
+Turrin, M.; Von Buelow, P.; Stouffs, R. Design Explorations of Performance Driven Geometry in Architectural
+Design Using Parametric Modeling and Genetic Algorithms. Adv. Eng. Inform. 2011, 25, 656–675. [CrossRef]
+Woodbury, R.F.; Burrow, A.L. Whither Design Space? AIE EDAM Artif. Intell. Eng. Des. Anal. Manuf. 2006,
+20, 63–82. [CrossRef]
+Dino, I.G. Creative Design Exploration by Parametric Generative Systems in Architecture. Metu J. Fac. Arch.
+2012, 29, 207–224. [CrossRef]
+Touloupaki, E.; Theodosiou, T. Performance Simulation Integrated in Parametric 3D Modeling as a Method
+for Early Stage Design Optimization—A Review. Energies 2017, 10, 637. [CrossRef]
+Shi, X.; Tian, Z.; Chen, W.; Si, B.; Jin, X. A Review on Building Energy Efficient Design Optimization from the
+Perspective of Architects. Renew. Sustain. Energy Rev. 2016, 65, 872–884. [CrossRef]
+Wortmann, T. Efficient, Visual, and Interactive Architectural Design Optimization with Model-Based Methods.
+PhD Thesis, Singagore University of Technology and Design, Singapore, 2018. [CrossRef]
+Janssen, P. Dexen: A Scalable and Extensible Platform for Experimenting with Population-Based Design
+Exploration Algorithms. AI EDAM 2015, 29, 443–455. [CrossRef]
+Kyropoulou, M.; Ferrer, P.; Subramaniam, S. Optimization of Intensive Daylight Simulations: A Cloud-Based
+Methodology Using HPC (High Performance Computing). In Proceedings of the PLEA 2018 HONG KONG
+Smart and Healthy within the 2-Degree Limit, Hong Kong, China, 10–12 December 2018; pp. 150–155.
+Wortmann, T.; Nannicini, G. Introduction to Architectural Design Optimization. In City Networks: Collaboration
+and Planning for Health and Sustainability; Karakitsiou, A., Migdalas, A., Rassia, S.T., Pardalos, P.M., Eds.;
+Springer International Publishing: Cham, Switzerland, 2017; pp. 259–278. [CrossRef]
+Burry, M.; Murray, Z. Architectural Design Based on Parametric Variation and Associative Geometry.
+In Proceedings of the 15th eCAADe Conference Proceedings, Vienna, Austria, 17–20 September 1997;
+ISBN 0-9523687-3-0.
+Oxman, R. Thinking Difference: Theories and Models of Parametric Design Thinking. Des. Stud. 2017,
+52, 4–39. [CrossRef]
+Harding, J.E.; Shepherd, P. Meta-Parametric Design. Des. Stud. 2017, 52, 73–95. [CrossRef]
+Caldas, L.; Santos, L. Generation of Energy-Efficient Patio Houses With GENE_ARCH. eCAADe 30 2012,
+1, 459–470.
+Chen, K.W.; Janssen, P.; Schlueter, A. Multi-Objective Optimization of Building Form, Envelope and Cooling
+System for Improved Building Energy Performance. Autom. Constr. 2018, 94, 449–457. [CrossRef]
+Chen, K.W.; Choo, T.S.; Norford, L. Enabling Algorithm-Assisted Architectural Design Exploration for
+Computational Design Novices. Comput. Des. Appl. 2019, 16, 269–288. [CrossRef]
+Wang, L.; Janssen, P.; Ji, G. Progressive Modelling for Parametric Design Optimization: An Example of How
+Parametric Design Optimization Can Support Reflection. In Proceedings of the 24th CAADRIA Conference,
+Wellington, New Zealand, 15–18 April 2019; pp. 383–392.
+Chen, K.W. Architectural Design Exploration of Low-Exergy (LowEx) Buildings in the Tropics. Ph.D. Thesis,
+ETH Zurich, Switzerland, 2015.
+Xu, X.; Yin, C.; Wang, W.; Xu, N.; Hong, T.; Li, Q. Revealing Urban Morphology and Outdoor Comfort
+through Genetic Algorithm-Driven Urban Block Design in Dry and Hot Regions of China. Sustainability
+2019, 11, 3683. [CrossRef]
+Si, F.; Wang, T. Building Massing Optimization in Early de Sign Stage. In Proceedings of the 20th International
+Conference of the Association for Computer-Aided Architectural Design Research in Asia, Daegu, Korea,
+20–22 May 2015; pp. 583–592.
+
+Sustainability 2019, 11, 6965
+
+27.
+28.
+
+29.
+
+30.
+31.
+
+32.
+33.
+34.
+35.
+36.
+
+37.
+
+38.
+
+39.
+40.
+41.
+42.
+43.
+44.
+45.
+46.
+
+20 of 20
+
+Janssen, P. A Generative Evolutionary Design Method. Digit. Creat. 2006, 17, 49–63. [CrossRef]
+Wang, L.; Janssen, P.; Ji, G. Utility of Evolutionary Design in Architectural Form Finding: An Investigation
+into Constraint Handling Strategies. In International Conference on-Design Computing and Cognition; Springer
+International Publishing: Cham, Switzerland, 2019; pp. 177–194. [CrossRef]
+Stouffs, R.; Janssen, P.; Roudavski, S. An Evolutionary Design Process: Adaptive-Iterative Explorations
+in Computational Embryogenesis Vignesh. In Proceedings of the 18th International Conference on
+Computer-Aided Architectural Design Research in Asia (CAADRIA 2013), Singapore, 15–18 May 2013;
+pp. 137–146.
+Yi, H. User-Driven Automation for Optimal Thermal-Zone Layout during Space Programming Phases. Arch.
+Sci. Rev. 2016, 59, 279–306. [CrossRef]
+Yi, H.; Yi, Y.K. Performance Based Architectural Design Optimization: Automated 3D Space Layout Using
+Simulated Annealing. In Proceedings of the 2014 ASHRAE/IBPSA-USA Building Simulation Conference,
+Atlanta, GA, USA, 10–12 September 2014; pp. 292–299.
+Cichocka, J.; Browne, W.N.; Ramirez, E.R. Optimization in the Architectural Practice An International Survey.
+In Proceedings of the 22nd CAADRIA Conference, Suzhou, China, 5–8 April 2017; pp. 387–397.
+Janssen, P. A Design Method and Computational Architecture for Generating and Evolving Building Designs.
+PhD Thesis, The Hong Kong Polytechnic University, Hong Kong, China, 2005.
+Woodbury, R. Elements of Parametric Design; Routledge: Abingdon, UK, 2010.
+Akin, O.; Moustapha, H. Strategic Use of Representation in Architectural Massing. Des. Stud. 2004, 25, 31–50.
+[CrossRef]
+Wortmann, T. Architectural Design Optimization-Results from a User Survey. In Proceedings of the
+Architecture Across Boundaries 2019, Suzhou, China, 19–21 June 2019; CKnE Social Sciences: Dubai, UAE.
+[CrossRef]
+Wang, L.; Janssen, P.; Ji, G. Diversity and Efficiency: A Hybrid Evolutionary Algorithm Combining the
+Island Model with a Steady-State Replacement Strategy. In Proceedings of the 24th CAADRIA Conference,
+Wellington, New Zealand, 15–18 April 2019; pp. 593–602.
+Sun, Y.; Turrin, M.; Sariyildiz, S.; Ren, S.; Yang, D. Multi-Disciplinary and Multi-Objective Optimization
+Problem Re-Formulation in Computational Design Exploration: A Case of Conceptual Sports Building
+Design. Autom. Constr. 2018, 92, 242–269. [CrossRef]
+Jakubiec, J.A.; Reinhart, C.F. DIVA 2.0: Integrating Daylight and Thermal Simulations Using Rhinoceros 3D,
+Daysim and EnergyPlus. Proc. Build. Simul. 2011, 20, 2202–2209.
+Raji, B.; Tenpierik, M.J.; van den Dobbelsteen, A. Early-Stage Design Considerations for the Energy-Efficiency
+of High-Rise Office Buildings. Sustainability 2017, 9, 623. [CrossRef]
+Yi, Y.K.; Malkawi, A.M. Optimizing Building Form for Energy Performance Based on Hierarchical Geometry
+Relation. Autom. Constr. 2009, 18, 825–833. [CrossRef]
+Cao, K.; Huang, B.; Wang, S.; Lin, H. Sustainable Land Use Optimization Using Boundary-Based Fast Genetic
+Algorithm. Comput. Environ. Urban Syst. 2012, 36, 257–269. [CrossRef]
+Dogan, T.; Reinhart, C.; Michalatos, P. Autozoner: An Algorithm for Automatic Thermal Zoning of Buildings
+with Unknown Interior Space Definitions. J. Build. Perform. Simul. 2016, 9, 176–189. [CrossRef]
+Wang, X.Y.; Yang, Y.; Zhang, K. Customization and Generation of Floor Plans Based on Graph Transformations.
+Autom. Constr. 2018, 94, 405–416. [CrossRef]
+Bradner, E.; Iorio, F.; Davis, M. Parameters Tell the Design Story: Ideation and Abstraction in Design
+Optimization. Simul. Ser. 2014, 46, 172–197.
+Okudan, G.E.; Tauhid, S. Concept Selection Methods—A Literature Review from 1980 to 2008. Int. J. Des.
+Eng. 2008, 1, 243. [CrossRef]
+© 2019 by the authors. Licensee MDPI, Basel, Switzerland. This article is an open access
+article distributed under the terms and conditions of the Creative Commons Attribution
+(CC BY) license (http://creativecommons.org/licenses/by/4.0/).
+
+

@@ -1,0 +1,1704 @@
+Frontiers of Architectural Research 13 (2024) 1400e1422
+
+Available online at www.sciencedirect.com
+
+ScienceDirect
+journal homepage: www.keaipublishing.com/foar
+
+RESEARCH ARTICLE
+
+Optimization-based design exploration
+of building massing typologiesdEvoMass
+and a typology-oriented computational
+design optimization method for early-stage
+performance-based building massing design
+Likai Wang a,*, Patrick Janssen b, Guohua Ji c
+a
+
+Design School, Xi’an JiaotongeLiverpool University, Suzhou 215123, China
+Packhunt, Amsterdam, Netherlands
+c
+School of Architecture and Urban Planning, Nanjing University, Nanjing 210093, China
+b
+
+Received 12 September 2023; received in revised form 20 May 2024; accepted 1 June 2024
+
+KEYWORDS
+Computational
+design;
+Design optimization;
+Design exploration;
+Design process;
+Building typology;
+Building massing
+
+Abstract In the past decade, there has been an increasing recognition of the role of computational design optimization in early-stage performance-based architectural design exploration. However, it remains challenging for designers to apply such optimization-based design
+explorations in practice. To address this issue, this paper introduces a design tool, called EvoMass, and an associated design method that facilitates design exploration for building massing
+typologies in performance-based design tasks. EvoMass is capable of offering architects design
+options reflecting performance-related building massing typologies for the design task, without
+necessitating advanced computational design skills. More importantly, it can provide architects
+with insights into the underlying performance implications, thereby enhancing early-stage performance-based design exploration. EvoMass and its associated design method overcome the
+limitation in the conventional typology-first-optimization-second design procedure adopted
+by most existing tools, and it promotes a typology-oriented design exploration method of using
+computational optimization in performance-based architectural design. To demonstrate the
+efficacy of EvoMass, case studies derived from architectural design studio tasks, incorporating
+daylighting, solar exposure, and subjective design intents, and the result of a user survey are
+presented, which highlights how EvoMass and the performance-based design optimization and
+exploration can enable architects to achieve a more performance-aware design.
+
+* Corresponding author.
+E-mail address: likai.wang@xjtlu.edu.cn (L. Wang).
+Peer review under responsibility of Southeast University.
+https://doi.org/10.1016/j.foar.2024.06.001
+2095-2635/ª 2024 The Author(s). Publishing services by Elsevier B.V. on behalf of KeAi Communications Co. Ltd. This is an open access
+article under the CC BY-NC-ND license (http://creativecommons.org/licenses/by-nc-nd/4.0/).
+
+Frontiers of Architectural Research 13 (2024) 1400e1422
+ª 2024 The Author(s). Publishing services by Elsevier B.V. on behalf of KeAi Communications Co.
+Ltd. This is an open access article under the CC BY-NC-ND license (http://creativecommons.org/
+licenses/by-nc-nd/4.0/).
+
+1. Introduction
+Building massing design plays a critical role in achieving
+high-performance and environmentally-responsive architectural design. In practice, architects often invest significant time and effort in manipulating building massing forms
+to enhance design performance, such as energy consumption, daylight accessibility, and solar heat gain. Nevertheless, such manual trial-and-error design methods are
+inefficient and prone to errors. Recent advancements in
+parametric modeling, computational optimization, and
+building performance simulation have enabled performance-based design optimization (Ekici et al., 2019;
+Wortmann and Nannicini, 2017). By incorporating these
+three components, design variants can be automatically
+generated, evaluated, and optimized, leading to an incremental enhancement of design performance. This approach
+is widely acknowledged as a more efficient and effective
+strategy for achieving performance-based building design
+(Li et al., 2020).
+In the research literature, performance-based design
+optimization has widely been applied to detailed and welldefined design tasks aimed at maximizing specific building
+performance factors. More recently, there has been a shift
+in focus toward supporting architects in early-stage design
+exploration (Bradner et al., 2014; Caldas, 2008; Marsault
+and Torres, 2019; Turrin et al., 2011). Contrary to solely
+improving building performance, optimization can also
+facilitate architects in exploring various design options and
+extracting relevant performance implications associated
+with building design. This enables a performance-aware
+design process amid the data-poor and open-ended early
+design stage when facing ill-defined and “wicked” design
+tasks. Such optimization-based design exploration has
+been increasingly recognized and exploited by researchers
+over the past few years (Chen et al., 2019; Ekici et al.,
+2019) and has been applied to various aspects related to
+early-stage architectural design, including building massing
+design (Chen et al., 2018; Chen et al., 2022; Estrado et al.,
+2023), architectural spatial layout design (Dino, 2016), and
+building skins and facades (Zhang et al., 2021).
+Despite recent advancements in research, applying
+optimization-based design exploration to architectural
+design scenarios remains challenging. On the one hand,
+encoding design concepts and conducting parametric
+modeling are technically and cognitively demanding and
+time-consuming. On the other hand, the overall form and
+typology of the building, in most cases, often have to be
+predetermined and hardcoded during the parametric
+modeling phase (Si et al., 2019). For instance, in relevant
+studies, the typology of buildings with central courtyards is
+often selected for optimization. However, due to the hardcoded nature of this typology in parametric models, alternative design typologies cannot be explored through
+
+optimization. This approach restricts the optimization
+process from surpassing the limitations imposed by predetermined forms and typologies. These two issues make
+optimization-based design exploration costly in terms of
+time and effort while failing to meet architects’ expectations regarding information feedback and design space
+exploration.
+To address these limitations and challenges, this study
+presents a design tool, called EvoMass and the corresponding method aimed to facilitate an iterative
+optimization-based design exploration of building massing
+typologies to support early-stage architectural design.
+EvoMass is specifically designed to produce diverse and
+high-performing design options that are able to communicate both tangible and abstract design information related
+to building massing typologies. With the use of EvoMass,
+architects can conduct a rapid and iterative optimizationbased design exploration to systemically investigate the
+design solution space and identify key information for
+design ideation and development.
+This study is intended to advance the research on the
+application of computational optimization to early-stage
+architectural design and demonstrate how EvoMass can
+offer a design method better aligning with architects’
+design exploration, ideation, and synthesis processes. From
+here on, the term “building typology” refers only to
+building designs with distinct spatial configurations, such as
+those featuring central courtyards or stepped volumes.
+Architectural design styles, such as orthogonal and curvilinear building forms, are not considered separate
+typologies.
+After this section, the paper first discusses the issue of
+typological inflexibility and relevant design modeling approaches for addressing this issue. Following this discussion, the paper elaborates on EvoMass and the associated
+design exploration method as well as how the tool and the
+design method can overcome typological inflexibility in
+optimization-based design exploration. The method introduces a novel utilization of computational design optimization to tackle ill-defined and open-ended problems in
+early-stage architectural design and is aimed to facilitate
+designers to conduct rapid optimization-based design
+exploration of building massing design. Moreover, to further
+explain how EvoMass can facilitate optimization-based
+design exploration, differences between the parametric
+schema employed in EvoMass and those commonly used in
+similar tools or studies are compared from the perspective
+of design solution space. This enhances the understanding
+of how different parametric modeling strategies impact
+optimization-based design exploration.
+The utility of the EvoMass and the associated design
+method is subsequently demonstrated. To better capture
+the complexity and challenges inherent in real-world scenarios, this study presents practical applications of EvoMass
+
+1401
+
+L. Wang, P. Janssen and G. Ji
+in realistic design studio tasks, incorporating daylighting,
+solar exposure, and wind permeability, along with a survey
+from actual users, thereby providing greater practical significance. Finally, we conclude by discussing the implications of this study for both research and architectural
+education while also highlighting potential avenues for
+future research.
+
+2. Background
+Both the architectural design industry and the research
+community have dedicated significant effort to supporting
+performance-based building massing design. Within the
+architectural design industry, several tools have been
+developed to facilitate rapid creation, modification, and
+evaluation of building massing design, including Blox Platform (Greer and Lucas), SiteSolve (RAMBOLL), Sandbox I/O
+(Psarras et al., 2020), Delve (Sidewalk Labs). In the
+research community, building massing design also plays a
+significant role in relevant studies that integrate with
+various computational techniques, such as performance
+evaluations (Chen et al., 2018) and predictions (Estrado et
+al., 2023), to evaluate and exploit the performance potential of the building massing design. However, most of the
+tool developments and studies in this field do not prioritize
+design generation algorithms for building massing forms.
+Instead, they commonly employed generation algorithms
+that are based on simple parametric schemas (Huang et al.,
+2015; Janssen et al., 2022; Lin et al., 2021). Consequently,
+these tools and studies often suffer from the typological
+inflexibility of building massing forms.
+
+2.1. Typological inflexibility
+Over the past two decades, the development of computational design programs such as Rhino-Grasshopper and
+Revit-Dynamo has provided designers with user-friendly and
+accessible tools, significantly accelerating and streamlining
+the process for designers to conduct design optimization
+focused on building massing forms. While applying computational design optimization in early-stage building design
+has become commonplace among many designers and offices, the challenge lies in conceiving and encoding intricate design schemas where designers are often confined to
+a limited range of building generation options and strategies, such as twist, slant, and rotation (Harding and
+Shepherd, 2017). In addition, as the design generation algorithm in early-stage architectural design is typically
+completed “on the fly”, the ad hoc algorithm tends to be
+simple and results in a significant degree of “lock-in”
+regarding building typologies, which exasperates the
+problem of inflexibility (Chaszar and Joyce, 2016).
+The typological inflexibility of the design generation
+algorithm imposes constraints on the design solution space
+(Sheikholeslami, 2010; Wang, 2022a; Woodbury and Burrow,
+2006). This limits the optimization process in its search for
+solutions with desirable performance, as it typically generates design variants that adhere to one single or a limited
+number of predetermined building typologies (Harding
+et al., 2013; Harding and Shepherd, 2017; Sheikholeslami,
+2010), such as buildings with a central courtyard (Chen
+
+et al., 2018; Ji et al., 2023) and high-rise point towers
+(Estrado et al., 2023). At the same time, this results in
+various applications featuring building shapes such as
+twisted (Jin and Jeong, 2014; Valiyappurakkal et al., 2022;
+Zhang et al., 2016) or shoebox geometries with varying dimensions (Lin et al., 2021). This tendency can result in
+relatively predictable optimization outcomes.
+Although typological inflexibility is often overlooked by
+relevant studies and applications due to various reasons, a
+few researchers have attempted to tackle this issue in
+different ways. The rest of this section selects and discusses three major strategies that are often applied to increase design diversity and differentiation among the
+generated design, including combinatory algorithms, genetic programming, and generic parametric schemas.
+
+2.2. Combinatory algorithms
+A direct approach to addressing typological inflexibility is
+developing a combinatory algorithm that incorporates
+multiple sub-algorithms, each encoding a parametric
+schema representing a distinct building typology. For
+instance, a combinatory algorithm may encompass subalgorithms capable of generating buildings with an L-shaped, U-shaped, or I-shaped footprint. This results in designs
+that feature significant architectural design differentiation
+(Chen et al., 2018; Ciardiello et al., 2020; Wang et al.,
+2016). However, the creation, modification, and maintenance of multiple sub-algorithms pose complex challenges
+that can disrupt architects’ design processes (Nault et al.,
+2018; Wang et al., 2019).
+In addition, using such modeling approaches makes it
+difficult to achieve a higher level of design diversity. Due to
+people’s cognitive limitations, only a small number of typologies can be included and implemented. At the same
+time, as each typology is typically implemented as a
+separate sub-algorithm and is generated independently,
+this results in the integration of different typologies unattainable. In light of this, combinatory algorithms are more
+suitable for design tasks with several predetermined design
+typologies, and the optimization is aimed at searching for
+the one that can yield the greatest performance benefit.
+Nevertheless, for early-stage design tasks with design typologies undecided, this approach will fall short of the need
+to generate designs with sufficient diversity and differentiation in terms of typologies.
+
+2.3. Genetic programming
+Genetic programming is another viable approach to generating diverse designs (Harding and Shepherd, 2017; Joyce
+and Ibrahim, 2017). This technique can create generative
+schemas and algorithms by connecting a set of predefined
+functional operators. Since the connection of operators is
+created automatically and rapidly, this facilitates the
+exploration of a wide spectrum of designs with minimal
+programming effort and can be effectively integrated with
+search/optimization algorithms to evolve designs for
+various objectives (Harding and Brandt-Olsen, 2018). At the
+same time, with varying generative schemas, the underpinning design generative logic is also different, which
+
+1402
+
+Frontiers of Architectural Research 13 (2024) 1400e1422
+leads to designs with distinct features. However, this
+approach requires users to provide highly abstract instructions for guiding the computer in correctly combining
+generative operators, such as a sequence of Grasshopper
+functional components. Furthermore, when the generated
+algorithm is complex, it has the tendency to produce
+chaotic and invalid designs (Joyce and Ibrahim, 2017).
+
+2.4. Generic parametric schemas
+In contrast to developing multiple sub-algorithms or using
+complex genetic programming, developing generic parametric schemas presents a promising approach that can be
+adapted and reused for various design tasks. Several studies
+focusing on performance-based optimization at the urban
+design scale proposed design generation algorithms capable
+of producing diverse urban forms. Such generic algorithms
+often represent and encode abstract generative strategies
+or approaches, rather than specific design typologies
+commonly employed in combinatory algorithms. This enables greater design flexibility and diversity, rendering
+them particularly valuable for initial exploration that necessitates a systematic examination of various design typologies. As these algorithms do not generate specific
+typologies of designs, they also have the advantage that
+can be adapted and customized to suit different urban
+design tasks. The utilization of such generic algorithms
+simplifies the application of parametric urban design optimization (Koenig et al., 2020; Nault et al., 2018; von
+Richthofen et al., 2018) and make the optimization “agile
+to changing input constraints and offers flexible solutions
+that can be re-computed depending on stakeholder
+perspective” (von Richthofen et al., 2018).
+At the architectural design scale, attempts have also
+been made to create generic and re-useable algorithms for
+building design generation and optimization with hierarchical (Yi and Malkawi, 2012) or voxel-based (Konis et al.,
+2016; Luca et al., 2021; Marsault and Torres, 2019)
+modeling approaches. These algorithms typically generate
+folded, free-form, or pixelated building geometries that
+can have higher geometric freedom. Driven by the optimization algorithm, these algorithms are able to produce siteand task-specific solutions that adapt to new design settings
+and optimization objectives. However, the practicality of
+optimized designs based on such geometries often falls
+short, and architects may encounter difficulties in comprehending the performance implications revealed by
+optimized designs, as the formal definitions and attributes
+inherent in such intricate building shapes tend to be
+imprecise and ambiguous. This issue underscores that while
+greater geometric freedom can lead to a higher level of
+diversity and variability in building design generation, the
+effectiveness of such algorithms could be compromised due
+to the absence of architectural design rules and knowledge
+(Tian et al., 2018; Wang et al., 2018).
+
+3. Design exploration method
+The proposed design exploration method is based on a
+computational design optimization workflow, wherein the
+iterative optimization process explores design variants and
+
+searches for high-performance solutions within the defined
+generative schema. However, unlike conventional applications of computational design optimization in performancebased design scenarios that focus solely on identifying the
+optimal solution, the proposed design method aims to
+facilitate an iterative performance-based optimization
+process, enabling designers to progressively enhance the
+results or gather feedback for more informed decisionmaking through multiple optimization runs (Fig. 1). In each
+iteration, designers can extract knowledge from previous
+optimization runs and adjust configurations of subsequent
+ones, resulting in what we term iterative optimizationbased design exploration.
+The iterative optimization-based design exploration also
+facilitates a co-evolutionary human-computer design process, which enables the discovery of high-performance solutions through the interpretation of optimization
+iterations and their corresponding results. When implementing the design method, designers are expected to
+perform multiple optimization runs focusing on different
+design solution spaces and/or different performance factors. In this way, designers can obtain rich performance
+information feedback from multiple perspectives and synthesize the information in the design development process
+(Fig. 1-1 and the examples described in Sections 4.1 and
+4.2). Moreover, the extracted information can also serve
+as motivation for designers to reformulate and reframe the
+design problem while iteratively adjusting the direction of
+the optimization search (Fig. 1-2, 1-3 and the example
+described in Section 4.3).
+The proposed design exploration method is based on the
+utilization of EvoMass, where the design generation algorithm and its delineation of the design solution space within
+EvoMass play a pivotal role in facilitating optimization to
+search for desirable designs that can provide valuable insights for architects to comprehend the design problem and
+make informed decisions at the initial stage. In this context,
+building typologies are given priority in EvoMass development, with the aim of identifying building typologies worthy
+of further investigation and development. Furthermore,
+software implementation, optimization execution, as well
+as design customization and information extraction are integral components enhancing the applicability of the proposed method in architectural design tasks. This section is
+dedicated to elaborating on these aspects.
+
+3.1. Typology-oriented design generation
+In routine applications of performance-based design optimization, building typologies are typically predetermined
+prior to the parametric modeling process as mentioned
+earlier. As a result, only certain aspects of the design are
+allowed to vary in the parametric model, such as the size
+and dimension of specific design components, limiting the
+range of options allowed to be explored and potential enhancements in performance. At the same time, this tendency further reinforces the focus on secondary
+geometrical effects, such as twisting and slanting, over
+exploring more meaningful architectural design variability.
+Although these secondary geometrical effects can lead
+to certain performance improvements for a given building
+
+1403
+
+L. Wang, P. Janssen and G. Ji
+
+Fig. 1
+
+The proposed design process of optimization-based design exploration.
+
+typology, they are less decisive compared to those resulting
+from altering the typology itself. Nevertheless, the building
+typology, with a significant impact on the overall performance of the building, is often defined a priori and cannot
+be varied during the parametric exploration process.
+Despite its importance, it is observed that most researchers
+have paid limited attention to exploring design spaces
+encompassing various building typologies during early-stage
+architectural design (Harding et al., 2013; Harding and
+Shepherd, 2017; Wu, 2022). Conversely, within the
+broader design science research community, there is
+widespread recognition of the significance of exploring
+design options and alternatives that possess structural differences. Such variations can provide distinct advantages
+during the conceptual design stage, enabling designers to
+gain valuable insights into the trade-offs and compromises
+inherent in the design problem (Cross, 2021; Harding and
+Shepherd, 2017; Lawson, 1990).
+The existing design approach mentioned above can be
+characterized as a typology-first-optimization-second procedure. In the development of EvoMass, we attempt to
+reverse the sequence of this procedure by embedding the
+design exploration of building typologies into the optimization process, thereby enabling a typology-oriented
+design optimization. This allows computers to assist architects in conducting preliminary and systematic design
+explorations for various building typologies prior to making
+design decisions. Hence, developing design generation algorithms that can produce designs with significant diversity
+in terms of building typologies is a critical step to achieving
+this goal.
+
+3.2. Design generation algorithms
+To achieve desirable typological variability, EvoMass has
+two independent building massing generation algorithms
+
+developed using generic and abstract architectural design
+knowledge (Wang et al., 2020a). The two building massing
+generation algorithms embody the principles of subtractive
+and additive form generation respectively (Simitch and
+Warke, 2014). From the perspective of building design,
+these two principles can describe most regular building
+massing forms, and the manipulation of masses and voids is
+one of the most common strategies for architectural design
+(Ching, 2007). Furthermore, these two manipulation approaches are closely associated with a wide range of passive design strategies such as atriums, stilts, self-shading,
+and solar envelopes (Wang et al., 2023). Therefore, the
+abstraction and encoding of these two principles can, in
+turn, allow computers to generate a wide variety of
+possible massing design options with differing typologies
+while incorporating various combinations of passive design
+strategies.
+Figure 2 demonstrates the key procedure of how the two
+algorithms generate building massing designs. The two algorithms, named the subtractive design generation algorithm and additive design generation algorithm, employ
+Boolean differences and union on cuboids to achieve the
+subtraction and addition of the building massing form
+generation. In these two algorithms, a design is created
+either by removing several parts within a predefined volume (the subtractive one) or by aggregating several mass
+volumes within a predefined boundary (the additive one).
+For each subtractive void or additive volume, six parameters are required to define the size (length, width, height)
+and location (x, y, z). To ensure the optimization is
+computationally manageable, the maximum number of
+subtractive voids or additive volume is limited to ten.
+Boolean operations have been used in computational
+design to generate building massing through recursion
+(Coates and Derix, 2014), shape grammars (Dy and Stouffs,
+2018; Müller et al., 2006), and parametric approaches
+
+1404
+
+Frontiers of Architectural Research 13 (2024) 1400e1422
+
+Fig. 2
+
+Generative procedure of the subtractive and additive design generation algorithms.
+
+(Chen et al., 2018; Huang et al., 2015; Luca et al., 2021) to
+generate building massing forms. Nonetheless, previous
+applications are often loosely-constrained or overconstrained in terms of geometrical flexibility, leading to
+designs that lack either architectural feasibility (e.g.,
+fractal geometries) or typological variability (e.g., buildings
+only with one subtractive void in a fixed position). To
+address these issues, the proposed generation algorithms
+incorporate a set of rules such as alignment and gridding to
+eliminate non-architectural features while ensuring high
+geometrical variability. Detailed descriptions of these
+specific rules can be found in prior studies (Wang et al.,
+2019; Wang et al., 2020a).
+It is worth noting that the two generation algorithms do
+not inherently generate specific building typologies, such as
+courtyard buildings and strip-type buildings. Instead,
+building typologies emerge from the design produced by
+these algorithms and require interpretation by the architect. For example, when utilizing the subtractive design
+generation algorithm, it can create a building form with its
+central part “subtracted” from a predefined box volume.
+Nevertheless, the definition of “this is a building with a
+central courtyard” will need to be given by the architect
+who interprets this building form. As a result, the full
+application of EvoMass in architectural design exploration
+also critically relies on architects’ interpretation and
+perception of the generated design. Further elaboration on
+this aspect can be found in Sections 3.3 and 3.5.
+
+3.3. Design solution spaces
+The distinction between other commonly-used parametric
+modeling strategies and the two algorithms in EvoMass can
+be further elucidated through the lens of the design solution space. When the design generation algorithm solely
+describes and represents a predetermined building typology, all the design variants in the design solution space are
+a specific embodiment of the underpinning building
+
+typology. This particular design solution space can be
+viewed as one subspace within the realm of all alternative
+design solutions (Fig. 3, left). Two issues arise when such
+design solution spaces are employed for optimization-based
+design exploration.
+First, the building typology of the design solution space
+may not be a suitable typology for the given design problem. Since all design variants will adhere to the same
+flawed typology, the optimization process is unlikely to help
+architects uncover and detect these flaws. Furthermore,
+the fact that the optimization process produces design
+variants that steadily improve in performance may also
+leave the designer with false confidence which may reinforce their trust in the selected design typology.
+Second, designers can create a combinatory algorithm as
+mentioned in Section 2.2 to explore and compare different
+building typologies. However, this process is both laborious
+and time-consuming. Furthermore, even if there is a
+combinatory algorithm encompassing different building
+typologies, the delineated design solution spaces are typically disjointed and lack integration. In other words, each
+design variant must originate from one distinct subspace
+and actualize the building typology embodied by that subspace (Fig. 3, middle). Consequently, it is not possible to
+synergize the strengths of designs derived from different
+subspaces into one integrated design variant; thus, precluding the opportunity to harness collective advantages
+offered by various building typologies and design strategies.
+Contrary to the above-mentioned design generation and
+representation approaches, the subtractive and additive algorithms do not explicitly represent any specific building
+typology. In contrast, they generate designs, from which the
+traits and features of different building typologies emerge,
+requiring interpretation by architects as mentioned in Section 3.2. In this way, the two algorithms implicitly merge and
+unify various subspaces that represent diverse building typologies (Fig. 3, right). As a result, one design variant can
+encompass a multitude of distinct traits and features associated with different design typologies, such as courtyards
+
+1405
+
+L. Wang, P. Janssen and G. Ji
+
+Fig. 3 Comparison of the design solution (phenotype-fitness) spaces defined by conventional design generation algorithms (left)
+and subtractive/additive design generation algorithm (right).
+
+and stepped volumes, as well as various passive design
+strategies, such as self-shading and solar envelopes. This
+enables the optimization process to extensively explore
+different building typologies and identify an optimal combination of typologies for maximizing performance.
+The design solution space defined by the two algorithms
+comprises abstract building typologies, and each design
+within the design solution space can be interpreted as a
+representation of a group of design variants sharing the
+same typology. Thus, the design variants from each abstract building typology can also be viewed as a secondary
+design solution space that necessitates further exploration
+subsequent to the initial investigation (Fig. 4). Architects
+can explore this secondary solution space in a more conventional manner by developing a series of design solutions
+or incorporating other bespoke architectural languages,
+such as curvilinear or free-form geometry.
+
+Fig. 4
+
+3.4. Software implementation and optimization
+execution
+Apart from the design generation, the optimization algorithm that searches for high-performance options in the
+design solution space also plays a critical role in supporting
+the design exploration. In this regard, EvoMass includes a
+hybrid evolutionary algorithm integrating a steady-state
+replacement strategy and an island-based model, called
+Steady-State Island Evolutionary Algorithm (SSIEA) (Wang
+et al., 2020). The combination of the two strategies can
+improve the search efficiency and design diversity of the
+optimization result at the same time.
+On one hand, the steady-state replacement strategy
+only selects a small number of design variants from the
+population for subsequent evolutionary operations such as
+
+Design solution space defined by the subtractive/additive algorithm and the secondary design solution space.
+
+1406
+
+Frontiers of Architectural Research 13 (2024) 1400e1422
+crossover and mutation. These selected design variants are
+used to create offspring designs, and those with improved
+fitness replace low-fitness designs within the original population. This facilitates the early influence of promising
+designs on the evolutionary process, in contrast to standard
+optimization algorithms that employ generational replacement strategies. Moreover, this further increases evolutionary pressure and expedites the convergence of the
+optimization search.
+On the other hand, the island-based model divides the
+design population into multiple sub-populations, each
+guided to explore distinct regions of the design solution
+space in order to maintain diversity within the design
+population. When using the two building massing design
+generation algorithms, the design solution space defined by
+the subtractive or additive algorithm may have multiple
+regions that contain design options with high fitness.
+Consequently, by incorporating the island-based model,
+SSIEA can effectively screen out more distinct design options with competitive performance than other standard
+evolutionary algorithms with a centralized population
+model. Furthermore, the island-based model also enables
+implicit clustering as design variants within an island tend
+to become more similar throughout the evolutionary process. This also facilitates the designers to explore other
+similar design variants within the same island where the
+identified optimal solution resides.
+
+Fig. 5
+
+EvoMass has been implemented as a library of components on the Rhino-Grasshopper platform (Wang et al.,
+2020b). The two generation algorithms are implemented
+as two EvoMass Building Generators, while SSIEA is encapsulated as the EvoMass Evolver. With this library, different
+workflows for various performance-based building design
+tasks can be created in a plug-and-play manner. Within the
+Rhino-Grasshopper platform, EvoMass Building Generator
+and Evolver can be directly connected to other building
+performance simulation tools, such as ClimateStudio and
+Ladybug Tools, to establish a design optimization workflow
+(Fig. 5) and to perform the optimization process. Moreover,
+the integration of the design generation and optimization
+function of EvoMass, as illustrated in the lower section of
+Fig. 5, results in a relatively compact Grasshopper network
+compared to typical networks comprising tens or even
+hundreds of components.
+Within an established workflow using EvoMass in Grasshopper, the designer is only required to specify three inputs:
+1) the design scenario (e.g., building site, design context), 2)
+optimization objectives (e.g., maximizing daylighting,
+reducing solar exposure), and 3) constraints on the building
+massing generation (e.g., floor numbers, footprints). Once
+the inputs have been defined, the workflow can be
+executed. Furthermore, this workflow can be re-used on
+different design tasks if the performance objectives are
+similar. For instance, an established workflow can be applied
+
+A design optimization workflow established using EvoMass and Ladybug.
+
+1407
+
+L. Wang, P. Janssen and G. Ji
+to different architectural design tasks, such as high-rise
+towers or commercial complexes, provided that the same
+building simulation and design evaluation are also applicable
+to the new design task. The designer only needs to customize
+the building type of the generated design by updating parameters in the design generation algorithm and adjusting
+geolocation in the performance simulation tool.
+
+3.5. Design customization and information
+extraction
+In order to enhance the usability, facilitating designers in
+configuring the design generation process and effectively
+collecting information from the optimization are also
+prioritized in the development of EvoMass. Regarding
+design configuration, designers can customize the design
+generation process through a set of user-defined parameters and constraints (Fig. 6). For example, designers can
+specify the maximum building volume when using the subtractive design generation algorithm or the spatial boundary when using the additive design generation algorithm,
+which defines the key design parameters of the generated
+building massing forms, such as floor numbers and volumetric sizes (Fig. 7). In addition, there are other parameters and constraints available for users to define more
+specific or nuanced variations of the generated design, such
+as the number and the size range of subtractive voids or
+additive volumes.
+Figure 8 illustrates a set of designs randomly produced
+by the two algorithms using different inputs and constraints
+in certain key user-defined parameters. On the one hand,
+designers can customize the formal characteristics, such as
+solid and fragmented building forms, of the generated
+
+Fig. 6
+
+design by changing parameters, including the number of
+additive masses and the size constraint of these masses
+(Wang, 2022b) (see the upper section of Fig. 8). This can
+make the optimized design options better align with architects’ bespoke design intents. In addition, modifying the
+user-defined parameters also allows designers to regulate
+the overall formal characteristics and control the design
+variability and differentiation in generated designs, as
+demonstrated in the first and third rows as well as the
+fourth and sixth rows. This also allows the designer to tailor
+the “span” of the design solution space (Wang, 2022a).
+On the other hand, even under the same user-defined
+parameters, the random sampling of designs exhibits significant differentiation in building typologies such as
+buildings incorporating different numbers of courtyards/
+atriums or with different footprints (L-shaped or U-shaped).
+From the perspective of building performance, these features can effectively differentiate the strengths and
+weaknesses of each design when confronted with different
+micro-climates and surrounding urban environments. The
+differentiation demonstrated among these generated designs is essential to satisfy the needs for the optimization to
+identify site- and task-specific solutions under varying
+design scenarios and performance objectives.
+Regarding information extraction, the formal features
+displayed in the optimized design is the major medium for
+designers to interpret the design implications associated
+with the building performance, such as passive design
+strategies and specific building typologies. In EvoMass, the
+application of Boolean operations on cuboids results in all
+generated building massing designs by the two algorithms
+being orthogonal. This approach inevitably excludes complex building massing forms, such as curved and non-
+
+User interfaces of the two design generation algorithm components.
+
+1408
+
+Frontiers of Architectural Research 13 (2024) 1400e1422
+
+Fig. 7 Designs generated according to different user-defined parameter inputs (reflecting different building types, the number of
+horizontal size constraints indicates the number of structural bays, and the number of vertical size constraints indicates the
+number of floors).
+
+orthogonal geometries. Despite this fact, the designs
+generated through EvoMass still possess the potential for
+further transformation into more intricate building geometries. For instance, Fig. 4, illustrates the conversion of a
+cubical void in the optimized design into a tilted façade
+with a folded surface or curved surface on the main
+elevation of the building, both of which reflect the same
+performance implication associated with the self-shading
+strategy.
+Furthermore, experienced designers are expected to be
+capable of implementing more radical modifications in the
+generated designs or integrating extracted information from
+these designs into the design synthesis process that incorporates other bespoke design intents or functional considerations. For instance, formal features associated with
+self-shading can offer indications for the need to reduce
+solar exposure, inspiring designers to explore alternative
+design options such as incorporating external shading devices or decreasing the window-to-wall ratio in specific
+sections of the building facade. In some other cases, optimized designs may exhibit volumetric recession to avoid
+shadows cast by surrounding buildings, offering cues for
+designers to allocate rooms with varying lighting requirements more effectively. Conversely, less-experienced
+designers, such as the students involved in the case-study
+design tasks presented in the subsequent section, can utilize
+EvoMass-generated designs as initial prototypes and tangible
+references for further development (Wang, 2022).
+
+4. Studio design tasks
+To further demonstrate the proposed design exploration
+method and offer more tangible examples of the iterative
+
+and the typology-oriented design exploration process,
+three studio design tasks using EvoMass and the design
+method are presented. The selected examples in this study
+effectively demonstrate the practical applicability of EvoMass within complex and dynamic real-world design processes. This distinguishes this study from other similar
+studies that typically adopt a controlled and simplified
+design scenario for case studies, where only performance
+issues are considered without subsequent design development after obtaining an optimized solution. These design
+tasks were part of a computational design elective, conducted at Nanjing University. The design tasks encompass
+educational buildings, high-rise office towers, and commercial buildings. The diversity of the design tasks also
+highlights the versatility of EvoMass. Three representative
+design projects were selected to illustrate how students
+with limited expertise in computational design can effectively utilize EvoMass to accomplish their respective tasks.
+Key parameters and information pertaining to these designs
+are summarized in Table 1.
+
+4.1. Educational building design
+The first example presents a design for a university
+educational building complex situated in a dense urban
+environment in Wuhan, China. This multifunctional building
+is envisioned to accommodate lecture rooms/halls, design
+studios, offices, and canteens. In this example, EvoMass
+was employed by students to generate building massing
+designs with a focus on optimizing daylighting and passive
+solar energy utilization. Both subtractive and additive
+design generation algorithms were utilized. The initial
+optimization process aims at maximizing overall daylight
+
+1409
+
+L. Wang, P. Janssen and G. Ji
+
+Fig. 8 Designs generated according to different user-defined parameter inputs (reflecting different formal characteristics, the
+number of horizontal size constraints indicates the number of structural bays, and the number of vertical size constraints indicates
+the number of floors).
+
+Table 1
+
+Key design parameters and information of the selected examples.
+Location
+
+Example Wuhan,
+1
+China
+Example Nanjing,
+2
+China
+
+Functionality
+
+Gross Height
+Area Limitation
+(m2) (m)
+
+Plot Designers
+Ratio
+
+Third-party tools used
+
+Middle-rise
+Educational
+Buildings
+High-rise Office
+Buildings
+
+18,000 24
+
+2.0
+
+4 master (year 1)
+students
+
+DIVA (for daylighting and solar
+irradiation simulation)
+
+35,000 100
+
+7.7
+
+1 undergraduate
+(year 4) student
+
+11,000 24
+
+4.0
+
+4 undergraduate
+(year 3) students
+
+Ladybug (for solar irradiation
+simulation)
+ClimateStudio (for daylighting
+simulation)
+GH_Wind (for wind flow
+simulation)
+Ladybug Tools (for solar
+irradiation simulation)
+ClimateStudio (for daylighting
+simulation)
+
+Example Shanghai, Middle-rise
+3
+China
+Commercial
+Buildings
+
+accessibility while also optimizing passive solar heat utilization by reducing summer solar heat gain and increasing
+winter heat retention.
+The diagram presented in Fig. 9 is derived from one of
+the diagrams featured in the final design poster, reflecting
+
+how the students have organized and synthesized the information obtained from optimization processes. This diagram showcases a compilation of designs that have evolved
+through multiple iterations of optimization runs, encompassing designs ranked at high, middle, and low levels. The
+
+1410
+
+Frontiers of Architectural Research 13 (2024) 1400e1422
+
+Fig. 9 The optimization-based design exploration with EvoMass. First row: Additive modeling. Second row: Subtractive modeling.
+First column: optimization for daylight maximization. Second column: optimization for solar energy maximization. Third column:
+optimization for maximizing both daylight and energy. Bottom: the selection of final design options).
+
+designs in Fig. 9 are divided into two rows and three columns, showcasing the outcomes from the initial
+optimization-based design exploration employing additive
+and subtractive generation algorithms. The first and second
+columns respectively exhibit the optimization results for
+daylight maximization and passive solar heat utilization.
+The third column demonstrates the optimization outcomes
+achieved by utilizing weight-sum functions to integrate
+both objectives of maximizing daylight and passive solar
+heat utilization. Each design is accompanied by a percentage value at the bottom left corner indicating its
+relative performance compared to the overall design population, where 100% represents the best design discovered
+during the optimization process.
+The initial design exploration (the left and middle columns in Fig. 9) facilitates the identification of several key
+design features associated with performance improvement.
+In terms of daylight accessibility, strip-shaped volumes
+(depicted with green-colored roofs) and central courtyards
+(depicted with orange-colored grounds) emerge as dominant design typologies in the optimization result. Both
+building configurations contribute to reducing the depth of
+floor plans that enhance the penetration of daylight into
+deeper areas of the building. Regarding passive solar heat
+utilization, the high-performing design options (depicted
+with dark/grey blue-colored roofs) exhibit staggered and
+
+stepped cascade volumes, gradually rising from south to
+north. This configuration aligns with context shading by
+allowing more building volume to escape from shadows cast
+by neighboring high-rise buildings on its southern side.
+Additionally, cantilevered blocks (depicted as pink-colored
+volumes) are incorporated in the northwest corner to provide self-shading against intense direct sunlight during
+summer afternoons, effectively reducing excessive solar
+exposure.
+The predominant performance-related features of the
+optimized design options (strip-shaped or staggering volumes), however, compromise the overall aesthetic quality,
+rendering them impractical for further development.
+Consequently, the students further utilized EvoMass to
+conduct optimization using weight-sum functions in order
+to integrate both performance objectives (daylighting
+enhancement and solar heat reduction). The purpose of
+conducting the third round of optimizations is not only to
+search for a design that can achieve a better balance between the two performance objectives but also to explore
+the utilization of EvoMass as a form-finding approach. Since
+the optimization has to simultaneously satisfy both performance objectives, the features identified in the first two
+rounds of optimization runs are compromised and less
+prominent. This also leads to several design options
+featuring interlocking volumes and well-balanced
+
+1411
+
+L. Wang, P. Janssen and G. Ji
+volumetric compositions, which are more conducive to accommodating functional and aesthetic demands, suggesting
+that these designs warrant further exploration and development (refer to the third column in Fig. 9).
+The students chose one design option from the third
+round of optimizations for further development (Fig. 9
+bottom). The chosen design features a courtyard integrated with multiple interconnected volumes. Adjustments
+were made to incorporate the key features identified in the
+first two rounds of optimizations into the chosen design.
+Specifically, the stepped cascade terrace surrounding the
+courtyard is reinforced to enhance daylight penetration
+into the lower part of the building, while a self-shading
+mechanism is implemented in the northwest corner to
+prevent summer overheating (Fig. 10). Moreover, these
+performance considerations also informed other design
+aspects. For instance, external shading screens are applied
+to west-facing facades as a measure against excessive solar
+exposure and resulting heat buildup. Additionally, when
+arranging different indoor functional spaces, daylight
+accessibility of different parts of the building was taken
+into account by the students.
+
+4.2. High-rise office building design
+The second example presents a design for a high-rise office
+building. In this case, the overall design process follows a
+similar approach as in the first example. However, prior to
+initiating the optimization process, the student was guided
+to conduct a site analysis using various building performance simulation tools and the building design generator of
+EvoMass. This step aims to provide the student with an
+
+Fig. 10
+
+initial understanding of how building massing interacts with
+its surrounding environment. Simultaneously, it prevents
+the student from being overwhelmed by technical complexities associated with computational design optimization, such as configuring evolutionary algorithms. When
+conducting the site analysis, only Building Generators of
+EvoMass were utilized to generate a random sampling of
+designs employing the additive design generation algorithm. Subsequently, performance analysis was conducted
+on these sampled designs.
+The site analysis investigates the impact of different
+high-rise building massing configurations on the surrounding
+environment in terms of wind flow and sunlight hours
+(Fig. 11). It examines how building massing influences these
+factors, including the shading effects caused by different
+building massing volumes and wind permeability resulting
+from different building footprints. Simultaneously, it enables the student to identify trade-offs between improved
+daylighting and the risk of overheating, as well as between
+daylight accessibility, assessed using spatial daylight autonomy (sDA), for the target building and potential
+obstruction of sunlight to neighboring buildings.
+Informed by the site analysis, the student subsequently
+formulated an objective function that incorporated factors
+including sunlight hours of surrounding buildings, solar
+exposure, and daylight accessibility (sDA) of the target
+building. However, due to the time-consuming flow dynamic simulation, wind-related performance was not
+considered in the optimization process. Nevertheless, in
+the next stage of design selection, the student’s decisionmaking is still influenced by performance implications
+associated with wind permeability.
+
+The final design work developed from the selected design.
+
+1412
+
+Frontiers of Architectural Research 13 (2024) 1400e1422
+
+Fig. 11 Examples of the site analysis on wind permeability (left) and sunlight hours (right) based on random sampling designs
+generated by the additive design generation algorithm.
+
+The optimization result, shown in the upper section of
+Fig. 12, presents multiple design options showcasing attributes that can mitigate sunlight obstruction to surrounding
+buildings while simultaneously enhancing daylight accessibility for the target building. Moreover, the student utilized
+a formal characteristic identified in the site analysis to
+evaluate these options in terms of wind-related performance. Based on the wind flow pattern depicted in Fig. 11
+(right), designs with wider dimensions towards the south
+and narrower dimensions towards the north can effectively
+facilitate unobstructed airflow of prevailing southeast
+winds during summer while efficiently obstructing chilly
+northeast winds in winter. Consequently, this principle was
+employed by the student to select a design with a similar
+footprint shape, and further adjustments were made to
+enhance this characteristic. Building upon this selected
+design, the student further rationalized the massing form of
+the structure and integrated additional design elements
+such as circulation, structure, and building façade (middle
+section of Fig. 12).
+As demonstrated in the lower section of Fig. 12, a
+distinct feature characterizing the building is a stepped
+volume gradually descending from south to north. This
+feature effectively conceals the smaller and lower volumes
+on the northern side under the shadows cast by the taller
+and larger volumes on the southern side, thereby reducing
+the overall surrounding masking effect of the target
+building. This characteristic aligns with the passive design
+strategy of solar envelopes (Knowles, 2003), which can be
+observed in most optimized designs listed in the upper left
+section of Fig. 12. In addition to the stepped volume, other
+
+elements contributing to improved daylighting include slattype blocks with shallow floor plans on the southern side
+and an internal atrium. Furthermore, by gathering predominantly on its western facade, this stepped volume also
+provides self-shading against direct solar exposure during
+summer afternoons.
+
+4.3. Commercial building design
+In the third example, EvoMass was applied to a commercial
+building complex situated in Shanghai’s dense urban environment, characterized by numerous high- and middle-rise
+buildings and a public park on its northern side. Unlike the
+previous two examples where optimization was primarily
+aimed at performance improvement, in this case, optimization is integrated into the design development and coevolutionary process. In this example, students were
+instructed to reflect on the optimization results, which
+further motivated them to iteratively reformulate the
+optimization problem to guide the optimization toward
+producing more satisfactory designs.
+At the initial stage of design, two performance objectives were considered: maximizing daylight accessibility
+within the building and minimizing sunlight obstruction
+towards the public park. Similar to the first case-study
+example, these optimized designs fail to meet the desired
+aesthetic quality; however, in contrast to the first example
+where students manually synthesized emerging performance implications and patterns into the design synthesis,
+this group of students chose to embed their architectural
+
+1413
+
+L. Wang, P. Janssen and G. Ji
+
+Fig. 12
+
+The final design.
+
+design intent within the optimization process itself. Their
+design intent was encoded as soft constraints through
+additional reward or penalty functions. The outcomes from
+these additional functions were combined with original
+performance evaluation functions using a scalarization
+method.
+The first intent is to maximize rooftop surfaces to provide outdoor space and viewing decks. Consequently, designs featuring a greater number of roof surfaces are
+awarded, thereby driving the optimization process toward
+seeking designs with multiple staggered roof surfaces. The
+second intent is that the building entrance should be
+retreated from the site boundary to create a semi-outdoor
+public space for gathering purposes. To this end, an
+entrance space is defined, and designs that minimize
+encroachment into this area are awarded. As a result, many
+high-fitness designs depicted in Fig. 13 feature a cantilevered block over the entrance area.
+Finally, the students selected one high-fitness design
+that was considered to be visually appealing and spatially
+feasible for the room arrangement. Thereafter, adjustments were made to the original building massing form,
+enhancing the overall clarity of spatial relationships. The
+
+final design is illustrated in Fig. 14, effectively addressing
+both performance objectives and architectural design
+intent.
+Regarding building performance, the strip-shaped
+building massing with shallow floor plans facilitates better
+daylighting conditions. Additionally, by lowering the height
+of the northwest corner of the building massing, it mitigates the masking effect of the building volume and allows
+more sunlight to reach the public park on the north. In
+contrast, this feature is absent in the northeast corner due
+to being already overshadowed by surrounding buildings. In
+terms of architectural design intent, the interlocking volume creates more rooftop spaces while a cantilevered
+block provides a semi-outdoor space that bridges between
+urban environment and indoor areas.
+
+4.4. Design results analysis
+The above examples demonstrate how the application of
+EvoMass can provide designers with both tangible and abstract information pertaining to building design, thereby
+assisting them more efficiently in tackling data-poor situations and open-ended design problems at early design
+
+1414
+
+Frontiers of Architectural Research 13 (2024) 1400e1422
+
+Fig. 13 The composition of the final fitness function and the produced optimization result (Dashed box: The selected design for
+further development, the fitness is the combined score calculated based on the product of all the included evaluation metrics, thus
+it only reflects the ranking of these design options).
+
+stages. The utilization of optimization-based design exploration enables designers to uncover latent design problems
+or unknown design constraints associated with building
+performance and built environment, facilitating them to
+better formulate more relevant design objectives and
+concepts that align with the specific environmental context
+and the pursuit of high-performing building designs.
+Furthermore, the optimization-based design exploration
+can also supplant the laborious trial-and-error process
+inherent in the conventional typology-first-optimizationsecond design approach. In such processes, designers have
+to conceive building typologies and manually modify and
+update the typologies in search of performance improvement. Nevertheless, the selected building typology might
+
+Fig. 14
+
+be suboptimal due to the lack of a systematic design
+exploration.
+The design process of the three examples can be further
+abstracted and categorized into two design process models
+(Fig. 15). The first model describes the design process
+observed in the first two examples (Sections 4.1 and 4.2)
+and is depicted in the upper diagram of Fig. 1-1. This model
+prioritizes the width of the design exploration and examines how building forms respond to various performance
+factors. In this model, designers initially identify specific
+performance implications from different sets of optimized
+or sampling designs, followed by a manual synthesis of acquired information into the design development process.
+This model allows designers to gather diverse references
+
+The final design work.
+
+1415
+
+L. Wang, P. Janssen and G. Ji
+
+Fig. 15
+
+Design process model abstracted on the basis of the three studio design examples described in Section 4.
+
+and maintain parallel thoughts at the beginning of the
+design process. In the above examples, this “width-first”
+exploration helps the students overcome the common
+novice tendency towards a “depth-first” design approach
+(Cross, 2021). In this regard, this model also cultivates
+students’ ability to develop a top-down and breadth-first
+design skill that typically requires more experience to
+acquire.
+The second model describes the design process in the
+last example (Section 4.3) and corresponds to two feedback
+loops displayed in Fig. 1-2 and 1-3. This model prioritizes
+the depth of the design exploration, in which design problem framing and design optimization are intertwined. In
+this process, designers continuously reformulate the optimization problem and iteratively re-calibrate the optimization search according to the feedback obtained from the
+prior optimization runs. This model can be considered a
+“Meta-search” in Gero and Kazakov’s exploration-based
+evolutionary model (Gero and Kazakov, 1996) and an
+example of a human-computer co-evolutionary design
+process (Dorst and Cross, 2001; Maher, 2000). This model
+also illustrates how EvoMass can enhance designers’
+moving-seeing-moving actions (Schön, 1992) in digital
+design scenarios while enabling informed decision-making
+and performance-aware architectural design.
+The two models reveal two possible approaches for
+optimization-based design exploration, which align with
+two established design methodologies identified in relevant
+
+design theories as mentioned above. In these two models,
+the flexibility and agility of EvoMass play a critical role in
+making such design processes feasible within a narrow
+timeframe. Furthermore, it is anticipated that these
+models can be applied to other design scenarios without
+reliance on EvoMass. The key lies in perceiving computational design optimization not only as a means of numerical
+improvement but also as a way to explore diverse solution
+spaces or facilitate design reflection.
+Regarding design synthesis, the three examples demonstrate how building performance can serve as a driving
+force in the design development process and contribute to
+defining the final architectural form. However, it is worth
+noting that despite certain modifications made by the students to the generated designs, the formal language
+inherited from subtractive and additive algorithms, characterized by orthogonal volumes, remained discernible in
+all final works. As mentioned in Section 3.5, we envision
+that more experienced designers may deviate further from
+the generated designs by employing a more intricate design
+synthesis approach that leverages information and knowledge extracted from optimization to conceive novel design
+solutions.
+In terms of design information and knowledge extraction, the utilization of SSIEA empowers designers with
+optimization results encompassing multiple highperformance designs. The extraction of design information and knowledge is achieved through an analysis of
+
+1416
+
+Frontiers of Architectural Research 13 (2024) 1400e1422
+commonalities among these designs. Note that EvoMass itself does not directly provide designers with explicit design
+information and knowledge. Thus, the interpretation and
+prior knowledge of designers, particularly in relation to
+environmental design and passive building strategies, are
+essential for extracting such information. In this regard, it
+was observed that certain students involved in the presented examples encountered difficulties in discerning the
+building typology or strategy from the optimization result
+due to their limited experience.
+The presented examples demonstrate a preference for
+the additive generation algorithm among students, primarily due to its ability to generate geometrically complex and architecturally interesting designs compared to
+the subtractive generation algorithm. Consequently, in
+studio design tasks with fewer constraints than realworld projects, students showed a greater inclination
+towards designs with less commonality to ordinary
+building forms. Furthermore, as EvoMass does not
+consider internal partitions, it implies a “function follows
+form” design process. In this regard, encouraging students to consider other design factors such as circulation
+and building skins may facilitate more radical changes or
+deviations from the generated design by forcing them to
+reconfigure or recompose the spatial configuration of the
+design.
+
+5. User survey
+In addition to the examples presented above, a questionnaire survey was conducted in order to better understand
+the utility of EvoMass and identify its potential limitations.
+The survey primarily investigates the utility of EvoMass in
+architectural design exploration, the extent to which the
+orthogonal geometry can hinder design creativity, and the
+key differences between EvoMass and other related design
+tools. The survey was sent not only to the students from the
+above examples but also to the external users who downloaded it from Food4Rhino, receiving 37 anonymous responses. The details of the questionnaire are presented in
+Appendix A.
+The first question surveys the respondents’ background,
+and most of the respondents have an architecture or urban
+design background (Fig. 16). Thus, the survey can primarily
+reflect the attitude from the perspective of architectural
+designers. Nevertheless, considering the limited number of
+questions and respondents, we acknowledge that the
+
+Fig. 16
+
+Fig. 17
+
+Responses to Question 2.
+
+survey only provides anecdotal evidence supporting the
+usefulness of EvoMass.
+Questions 2 and 3 reflect the usage of EvoMass. The
+result shows that approximately 30% of respondents have
+utilized EvoMass in real-world design projects (Fig. 17) and
+over two-thirds of respondents employed EvoMass to acquire performance-based design concepts and inspiration
+(Fig. 18). However, about 43.2% of the respondents also
+utilized it to identify high-performance design solutions
+from the optimization result (Fig. 18), suggesting that many
+users still prioritize seeking solutions when using EvoMass.
+Questions 4 and 5 reflect the efficiency of EvoMass, and
+most respondents agreed that it effectively facilitates
+design ideation, exploration, and conceptual development
+(Fig. 19). Additionally, approximately 40% of respondents
+did not view orthogonal geometry as a significant
+constraint on design creativity. In contrast, it is worth
+mentioning that 45% of responses still fell under the “fairly
+limiting” category, including five professional designers
+(Fig. 20), which deviates from our initial expectation that
+experienced designers would be less influenced by
+orthogonal geometry.
+Question 6 compares EvoMass with other relevant software tools and plugins, and most respondents recognized
+that EvoMass is more suitable for early-stage architectural
+design and easier to use than other optimization tools
+(Fig. 21). In addition, one response also explicitly elaborated that EvoMass is “more useful for massing studies,
+while other software tools are largely focused on façade
+and fenestration studies”.
+In summary, the survey findings generally support the
+assumed utility of EvoMass in architectural design; however, they also indicate that for higher-level information
+extraction and knowledge abstraction, EvoMass is more
+
+Fig. 18
+
+Responses to Question 1.
+
+1417
+
+Responses to Question 3.
+
+L. Wang, P. Janssen and G. Ji
+
+Fig. 19
+
+Fig. 21
+
+Responses to Question 4.
+
+complex than initially anticipated. Furthermore, despite
+respondents being asked to compare EvoMass with other
+relevant tools in the survey, a thorough and consistent examination is still required to identify the strengths and
+weaknesses of EvoMass through specific design scenario
+comparisons for future improvements.
+
+6. Discussion and conclusion
+6.1. Implications to tool development, research,
+and education
+Despite the increasing availability of tools and studies
+dedicated to early-stage performance-based design optimization, it remains uncommon to find applications and
+research that surpass primitive manipulation of building
+forms, such as the previously mentioned twisted and folded
+geometries. The utilization of EvoMass exemplifies an efficient approach toward implementing computational design
+optimization at a more abstract level of design exploration,
+ideation, and synthesis, thereby potentially enhancing its
+practical applicability.
+The examples in Section 4 demonstrate that the application of EvoMass can be more closely aligned with architects’ existing divergent exploration and convergent
+exploitation cycles in conceptual design (Cross, 2021).
+Research on computational design optimization often
+narrowly focuses on solving specific sub-problems, disregarding how these solutions contribute to designers’
+systematic and holistic understanding of the overall design
+
+Fig. 20
+
+Responses to Question 5.
+
+Responses to Question 6.
+
+problem. EvoMass and the associated design exploration
+method take a broader approach by integrating computational design optimization into the overall design process
+rather than providing end solutions. Furthermore, it exemplifies a potential co-evolutionary design process in
+performance-based building design.
+Regarding architectural education in computational
+design, EvoMass simplifies the teaching and learning of
+computational design optimization, enabling students to
+allocate more time and effort toward design exploration
+and ideation processes. By understanding the advantages of
+employing computational techniques, students become
+self-motivated with a stronger incentive to delve deeper
+into computational design approaches. This is further
+exemplified by a recent teaching experiment involving
+EvoMass, which successfully accommodated over 200 students in learning computational design optimization for
+early-stage architectural design within a span of six weeks
+(Wang et al., 2023). This stands in contrast to many existing
+pedagogical methods that require students to spend a significant amount of time acquiring relevant parametric
+modeling and computational design skills before they can
+start experimenting (Vazquez, 2023). Furthermore, when
+utilizing EvoMass in design education, its capacity for
+generating diverse design strategies aids students in overcoming fixation on a single solution, providing an intuitive
+means for developing a sense of exploration within their
+learning processes.
+
+6.2. Limitations and future research
+The presented examples and the user feedback survey
+demonstrate the efficacy of EvoMass in early-stage architectural design, thereby highlighting its potential for
+practical application. Recent advancements in research
+pertaining to design creativity and cognition have unveiled
+a number of unexplored avenues that warrant further
+investigation.
+First, in the presented examples, it is common for designers to conduct multiple optimization processes to
+comprehend the impact of design parameters on building
+performance and their interrelationships when utilizing
+EvoMass. However, designers are faced with the manual
+management of numerous design populations and
+
+1418
+
+Frontiers of Architectural Research 13 (2024) 1400e1422
+optimization results from previous optimization runs. This
+concern has also garnered attention from the research
+community (Cristie and Joyce, 2021; Woodbury et al.,
+2017), leading to the development of tools like GHShot
+and Interactive Design Galleries that aim to enhance data
+visualization and management for parametric design
+exploration. Consequently, future research will explore
+possibilities in developing a workspace dedicated to managing, documenting, and visualizing multiple optimizations
+in order to facilitate information and knowledge extraction. In this regard, a prototype system has been developed to support such multi-optimization design exploration
+(Wang et al., 2023).
+Second, the visual examination of the building’s geometry plays a crucial role in extracting information using
+EvoMass. In the aforementioned teaching examples, students still faced challenges in identifying commonalities
+from a substantial number of design options, which can be
+mentally demanding and particularly daunting for novice
+designers. Although the embedded island-based evolutionary algorithm already incorporates some level of implicit clustering, additional forms of analysis could alleviate
+the cognitive burden. Future research will explore methods
+capable of providing supplementary feedback to designers
+regarding design populations. Various approaches can be
+considered to quantify similarities and differences among
+designs (Brown and Mueller, 2019) as well as to cluster or
+organize designs in a more structured manner (Harding,
+2016; Yousif and Yan, 2019). Moreover, the recent advancements in Large Language Models and Multimodal
+Models for Visual-Question-Answering could also assist designers, particularly those with limited expertise, in identifying the design typology and strategies implied by
+optimized designs (Agrawal et al., 2015).
+Third, as demonstrated in the teaching examples, the
+final designs still exhibit a significant commonality with
+those generated by subtractive and additive algorithms in
+terms of orthogonal geometry. However, feedback from
+the survey also indicates that relying too heavily on
+orthogonal geometry can lead to preconceptions and stifle
+creativity. Therefore, future research will explore strategies that focus less on generating orthogonal geometric
+forms and instead prioritize abstract information that
+supports design decision-making. In this regard, applying
+our proposed design approach to real-world projects with
+experienced architects is a critical step toward further
+examining its potential and limitations in architectural
+design. Additionally, the recent advancements in Generative AI, such as image generation, could potentially facilitate designers in exploring massing designs that transcend
+orthogonal geometry when integrated with EvoMass (Zhong
+et al., 2024).
+Lastly, the two generation algorithms currently work
+separately; thus, the tool cannot generate building massing
+designs incorporating both subtractive and additive strategies simultaneously. Nevertheless, the incorporation of
+the two strategies could produce designs with higher formal
+flexibility and variability, and, as a result, may reveal richer
+and more precise design implications pertinent to the given
+
+performance objective. Thus, the combination of the two
+strategies in design generation will be investigated in the
+future.
+
+6.3. Conclusion
+The development of EvoMass aims to facilitate an iterative
+and typology-oriented design optimization and exploration
+process for performance-based building massing design.
+This paper presents a key concept that addresses the issue
+of typological inflexibility in performance-based design
+optimization, enabling a typology-oriented design optimization and exploration approach for early-stage architectural design. By utilizing subtractive and additive
+algorithms, EvoMass enables the generation of diverse
+building massing design options with varying typologies.
+These options provide both tangible and abstract information pertaining to building performance and typologies. The
+presented examples demonstrate how EvoMass and the
+associated design exploration method can assist designers
+in addressing data-poor and open-ended design tasks from
+perspectives related to building performance and the built
+environment. Furthermore, these examples emphasize that
+EvoMass does not diminish or replace architects’ role in
+architectural design; instead, it fosters a co-evolutionary
+human-machine design process. By synergizing human
+creativity with computational capabilities, more practical
+support can be offered by EvoMass in resolving complex
+real-world building design challenges.
+
+Ethics statement
+The authors declare that their Institutional Ethics Committee confirmed that no ethical review was required for
+this study. Written informed consent for participation was
+not required because all participants’ data was anonymized
+before the statistical analyses were done.
+
+Declaration of competing interest
+The authors declare that they have no known competing
+financial interests or personal relationships that could have
+appeared to influence the work reported in this paper.
+
+Acknowledgment
+This study is supported by the Xi’an Jiaotong-Liverpool
+University Research Development Fund (RDF-23-01-107)
+and the National Natural Science Foundation of China
+(52178017). In addition, the authors would like to thank Dr.
+Francesco De Luca (Tallinn University of Technology) for his
+detailed and valued comments and suggestions, as well as
+the students who contributed to the design examples presented in this paper: Han Zhang, Yuhui Shen, Yifan Chen,
+and Qin Yuan for the first design example; Mengya Jiao for
+the second design example, and Yuhan Chen, Youyu Lu,
+Tianyi Gu, and Zhirui Bian for the third design example.
+
+1419
+
+L. Wang, P. Janssen and G. Ji
+
+Appendix A
+Table A.1
+
+The Questionnaire for the User Survey
+
+Question 1 (Single
+Choice)
+
+Education and Professional
+Background
+
+Question 2 (Single
+Choice)
+
+What area do you use
+EvoMass for?
+
+Question 3 (Multiple
+Choice)
+
+What is the main reason you
+use EvoMass?
+
+Question 4 (Linear
+Scale)
+
+How do you evaluate
+EvoMass in terms of its
+efficacy for design ideation,
+design exploration, and
+conceptual development?
+How do you evaluate the
+boxy orthogonal building
+massing volume generated
+by EvoMass limiting the
+design creativity?
+
+Question 5 (Linear
+Scale)
+
+Question 6 (Optional,
+Multiple Choice
+with open
+comments)
+
+ Architecture or Urban design
+ Building engineering
+ Building science
+ Other
+ Research
+ Real-world design projects
+ Studio design projects
+ Other
+ Find specific high-performing design solutions
+ Obtain performance-based design concepts and/or
+inspiration
+ Extract performance-related information and/or design
+knowledge
+ Other
+For score 1: EvoMass cannot offer any benefit in design
+ideation and exploration or in overcoming design fixation.
+For score 5: the result produced by EvoMass can provide
+very essential information, inspiration, or solutions for the
+design ideation and synthesis.
+For score 1: the boxy forms do not limit the design
+creativity, and users can gain information, insight, or
+inspiration from the result produced by EvoMass and apply
+these to the design and to develop solutions beyond the
+boxy forms. For score 5: the boxy forms strongly limit the
+design creativity, resulting in strong bias or preconceived
+ideas as well as making the design become stuck in the
+orthogonal geometries.
+ EvoMass can provide information/insight for understanding the design problems
+ EvoMass can provide practical and/or intriguing building
+massing solutions for design tasks
+ EvoMass can provide inspiration for ideation and conceptual developments
+ EvoMass is more suitable for early-stage architectural
+design
+ EvoMass is easier to use
+ EvoMass provides more useful functions (data recording,
+automatically create backup files, etc.)
+ Other
+
+If you have experience in
+using other relevant design
+generation or optimization
+tools, such as Galapagos,
+Octopus, Wallacei, and
+Wasp, what aspects of
+EvoMass do you find
+different from these tools?
+
+References
+Agrawal, A., Lu, J., Antol, S., Mitchell, M., Batra, D., Zitnick, C.L.,
+Parikh, D., 2015. VQA: visual question answering. In: Proceedings of the IEEE International Conference on Computer
+Vision, 2015 Inter, pp. 2425e2433.
+Bradner, E., Iorio, F., Davis, M., 2014. Parameters tell the design
+story: ideation and abstraction in design optimization. In: 2014
+Proceedings of the Symposium on Simulation for Architecture &
+Urban Design, pp. 172e197.
+Brown, N.C., Mueller, C.T., 2019. Quantifying diversity in parametric design: a comparison of possible metrics. AI EDAM (Artif.
+Intell. Eng. Des. Anal. Manuf.) 33 (1), 40e53.
+Caldas, L., 2008. Generation of energy-efficient architecture solutions applying GENE_ARCH: an evolution-based generative
+design system. Adv. Eng. Inf. 22 (1), 59e70.
+
+Chaszar, A., Joyce, S.C., 2016. Generating freedom: questions of
+flexibility in digital design and architectural computation. Int.
+J. Architect. Comput. 14 (2), 167e181.
+Chen, K.W., Choo, T.S., Norford, L., 2019. Enabling algorithmassisted architectural design exploration for computational
+design novices. Computer-Aided Design & Applications 16 (2),
+269e288.
+Chen, K.W., Janssen, P., Schlueter, A., 2018. Multi-objective
+optimisation of building form, envelope and cooling system for
+improved building energy performance. Autom. ConStruct. 94
+(July), 449e457.
+Chen, Y., Lu, Y., Gu, T., Bian, Z., B, L.W., Tong, Z., 2022. From
+separation to incorporation - a full-circle application of
+computational approaches to performance-based architectural
+design. In: Proceedings of the 2021 DigitalFUTURES. Springer,
+Singapore, pp. 189e198.
+
+1420
+
+Frontiers of Architectural Research 13 (2024) 1400e1422
+Ching, F.D.K., 2007. Architecture: Form, Space, and Order, Third.
+John Wiley & Sons, Inc.
+Ciardiello, A., Rosso, F., Dell’Olmo, J., Ciancio, V., Ferrero, M.,
+Salata, F., 2020. Multi-objective approach to the optimization
+of shape and envelope in building energy design. Appl. Energy
+280 (August), 115984.
+Coates, P., Derix, C., 2014. The deep structure of the picturesque.
+Architect. Des 84 (5), 32e37.
+Cristie, V., Joyce, S.C., 2021. Versioning for parametric design
+exploration process. Autom. ConStruct. 129 (June), 103802.
+Cross, N., 2021. Engineering Design Methods: Strategies for Product
+Design, fifth ed. Wiley.
+Dino, I.G., 2016. An evolutionary approach for 3D architectural
+space layout design exploration. Autom. ConStruct. 69,
+131e150.
+Dorst, K., Cross, N., 2001. Creativity in the design process: Coevolution of problem-solution. Des. Stud. 22 (5), 425e437.
+Dy, B., Stouffs, R., 2018. Combining geometries and descriptions A
+shape grammar plug-in for grasshopper. ECAADe 2018 2
+(September 2018), 499e508.
+Ekici, B., Cubukcuoglu, C., Turrin, M., Sariyildiz, I.S., 2019.
+Performative computational architecture using swarm and
+evolutionary optimisation: a review. Build. Environ. 147
+(October 2018), 356e371.
+Estrado, E., Turrin, M., Eigenraam, P., 2023. Optimization of
+complex-geometry high-rise buildings based on wind load
+analysis. SIMULATION 99 (11), 1133e1146.
+Gero, J.S., Kazakov, V.A., 1996. An exploration-based evolutionary
+model of a generative design process. Comput. Aided Civ.
+Infrastruct. Eng. 11 (3), 211e218.
+Zhong, C., Shi, Y., Cheung, L.H., Wang, L., 2024. AI-enhanced
+performative building design optimization and exploration: a
+design framework combining computational design optimization
+and generative AI. In: Gardner, Nicole, Herr, C.M., Wang, L.,
+Toshiki, H., Khan, S.A. (Eds.), ACCELERATED DESIGN - Proceedings of the 29th CAADRIA Conference, 1. Association for
+Computer-Aided Architectural Design Research in Asia (CAADRIA), Hong Kong, pp. 59e68.
+Greer, E., & Lucas, R. The Most Timeless Design Differentiator Is
+Technology.
+Harding, J., 2016. Advances in architectural geometry 2015 dimensionality reduction for parametric design exploration. In:
+Advances in Architectural Geometry 2016. vdf Hochschulverlag
+AG an der ETH Zürich, pp. 204e221.
+Harding, J., Brandt-Olsen, C., 2018. Biomorpher : interactive
+evolution for parametric design. Int. J. Architect. Comput. 16
+(June), 144e163.
+Harding, J.E., Shepherd, P., 2017. Meta-parametric design. Des.
+Stud. 52, 73e95.
+Harding, J., Joyce, S., Shepherd, P., Williams, C., 2013. Thinking
+topologically at early stage parametric design. In: Advances in
+Architectural Geometry 2012. Springer, Vienna, pp. 67e76.
+Huang, Y.S., Chang, W.S., Shih, S.G., 2015. Building massing optimization in the conceptual design phase. Computer-Aided
+Design and Applications 12 (3), 344e354.
+Janssen, P., Bui, T.D.P., Wang, L., 2022. Möbius evolver: competitive exploration of urban massing strategies. In: As, I., Basu, P.,
+P, B.T.-A.I., U, P., Talwar, D. (Eds.), Artificial Intelligence in
+Urban Planning and Design. Elsevier, pp. 293e321.
+Ji, Y., Xu, M., Zhang, T., He, Y., 2023. Intelligent parametric
+optimization of building atrium design: a case study for a sustainable and comfortable environment. Sustainability 15 (5),
+4362.
+Jin, J.T., Jeong, J.W., 2014. Optimization of a free-form building
+shape to minimize external thermal load using genetic algorithm. Energy Build. 85, 473e482.
+Joyce, S.C., Ibrahim, N., 2017. Exploring the evolution of meta
+parametric models. In: Disciplines and Disruption - Proceedings
+
+Catalog of the 37th Annual Conference of the Association for
+Computer Aided Design in Architecture, ACADIA 2017,
+pp. 308e317.
+Knowles, R.L., 2003. The solar envelope: its meaning for energy
+and buildings. Energy Build. 35 (1), 15e25.
+Koenig, R., Yufan, M., Knecht, K., Aichinger, A., Konieva, K., 2020.
+Integrating urban analysis, generative design, and evolutionary
+optimization for solving urban design problems. Environ. Plan. B
+Urban Anal. City Sci. 47 (6), 1e17.
+Konis, K., Gamas, A., Kensek, K., 2016. Passive performance and
+building form: an optimization framework for early-stage design
+support. Sol. Energy 125, 161e179.
+Lawson, B., 1990. How Designers Think: the Design Process
+Demystified. Elsevier/Architectural.
+Li, S., Liu, L., Peng, C., 2020. A review of performance-oriented
+architectural design and optimization in the context of sustainability: dividends and challenges. Sustainability 12 (4), 1427.
+Lin, B., Chen, H., Yu, Q., Zhou, X., Lv, S., He, Q., Li, Z., 2021.
+Moosas e a systematic solution for multiple objective building
+performance optimization in the early design stage. Build. Environ. 200 (January), 107929.
+Luca, F. De, Dogan, T., Sepúlveda, A., 2021. Reverse solar envelope
+method . A new building form-finding method that can take
+regulatory frameworks into account. Autom. ConStruct. 123
+(September 2020), 103518.
+Maher, M.L., 2000. A model of Co-evolutionary design. Eng. Comput. 16 (3e4), 195e208.
+Marsault, X., Torres, F., 2019. An interactive and generative ecodesign tool for architects in the sketch phase. J. Phys. Conf.
+1343 (1), 012136.
+Müller, P., Wonka, P., Haegler, S., Ulmer, A., Van Gool, L., 2006.
+Procedural modeling of buildings. ACM SIGGRAPH 2006 Papers
+on - SIGGRAPH ’06 1 (212), 614.
+Nault, E., Waibel, C., Carmeliet, J., Andersen, M., 2018. Development and test application of the UrbanSOLve decisionsupport prototype for early-stage neighborhood design. Build.
+Environ. 137 (March), 58e72.
+Psarras, S., Kosicki, M., El-Ashry, K., Tarabishy, S., Tsigkari, M.,
+Davis, A., Aish, F., 2020. SandBOX - an intuitive conceptual
+design system BT - impact: design with all senses. In:
+Gengnagel, C., Baverel, O., Burry, J., Ramsgaard Thomsen, M.,
+Weinzierl, S. (Eds.), DMSB 2019: Impact: Design with All Senses.
+Springer International Publishing, pp. 625e635.
+RAMBOLL. SiteSolve.
+Schön, D.A., 1992. Designing as reflective conversation with the
+materials of a design situation. Knowl. Base Syst. 5 (1), 3e14.
+Sheikholeslami, M., 2010. Design space exploration. In:
+Woodbury, R. (Ed.), ELEMENTS OF PARAMETRIC DESIGN, first ed.
+Routledge, pp. 275e287.
+Si, B., Wang, J., Yao, X., Shi, X., Jin, X., Zhou, X., 2019. Multiobjective optimization design of a complex building based on an
+artificial neural network and performance evaluation of algorithms. Adv. Eng. Inf. 40 (April), 93e109.
+Sidewalk Labs. Delve.
+Simitch, A., Warke, V., 2014. The Language of Architecture: 26
+Principles Every Architect Should Know. Rockport Publishers.
+Tian, Z., Zhang, X., Jin, X., Zhou, X., Si, B., Shi, X., 2018. Towards
+adoption of building energy simulation and optimization for
+passive building design: a survey and a review. Energy Build.
+158, 1306e1316.
+Turrin, M., Von Buelow, P., Stouffs, R., 2011. Design explorations of
+performance driven geometry in architectural design using
+parametric modeling and genetic algorithms. Adv. Eng. Inf. 25
+(4), 656e675.
+Valiyappurakkal, V.K., Shabarise, Y., Natawadkar, K., Misra, K.,
+2022. A methodology to assess the constructibility of free-form
+buildings using building and surface performance indicators:
+application to a case study. Energy Build. 270, 112303.
+
+1421
+
+L. Wang, P. Janssen and G. Ji
+Vazquez, E., 2023. Teaching parametric design: fostering algorithmic thinking through incomplete recipes. Open House Int. 49
+(4), 736e751.
+von Richthofen, A., Knecht, K., Miao, Y., König, R., 2018. The
+‘Urban Elements’ method for teaching parametric urban design
+to professionals. Frontiers of Architectural Research 7 (4),
+573e587.
+Wang, L., 2022a. Understanding the span of design spaces. In:
+Gerber, D., Pantazis, E., Bogosian, B., Nahmad, A., Miltiadis, C.
+(Eds.), CAAD Futures 2021: Computer-Aided Architectural
+Design, Design Imperatives: the Future Is Now, 1465. Springer,
+Singapore, pp. 288e297.
+Wang, L., 2022b. Optimization-aided design: two approaches for
+reflective exploration of design search space. Int. J. Architect.
+Comput. 20 (4), 758e776.
+Wang, L., 2022. Workflow for applying optimization-based
+design exploration to early-stage architectural design e
+case study based on EvoMass. Int. J. Archit. Comput. 20 (1),
+41e60.
+Wang, L., Chen, K.W., Janssen, P., Ji, G., 2020a. Algorithmic
+generation of architectural massing models for building design
+optimisation - parametric modelling using subtractive and additive form generation principles. In: RE: Anthropocene, Design
+in the Age of Humans - Proceedings of the 25th International
+Conference on Computer-Aided Architectural Design Research
+in Asia, CAADRIA 2020, 1, pp. 385e394.
+Wang, L., Chen, K.W., Janssen, P., Ji, G., 2020b. Enabling
+optimisation-based exploration for building massing design - a
+coding-free evolutionary building massing design toolkit in
+rhino-grasshopper. In: RE: Anthropocene, Design in the Age of
+Humans - Proceedings of the 25th International Conference on
+Computer-Aided Architectural Design Research in Asia, CAADRIA
+2020, 1, pp. 255e264.
+Wang, L., Janssen, P., Bui, T.D.P., Chen, K.W., 2023a. Comparing
+design strategies: a system for optimization-based design
+exploration. In: HUMAN-CENTRIC, Proceedings of the 28th International Conference of the Association for Computer-Aided
+Architectural Design Research in Asia (CAADRIA), 1,
+pp. 221e230.
+Wang, L., Janssen, P., Chen, K.W., Tong, Z., Ji, G., 2019. Subtractive building massing for performance-based architectural
+design exploration : a case study of daylighting optimization.
+Sustainability 11 (24), 6965.
+Wang, L., Janssen, P., Ji, G., 2018. Utility of evolutionary design in
+architectural form finding: an investigation into constraint
+handling strategies. In: Gero, John S. (Ed.), Design Computing
+and Cognition, 18. Springer, pp. 177e194.
+
+Wang, L., Janssen, P., Ji, G., 2020. SSIEA: a hybrid evolutionary
+algorithm for supporting conceptual architectural design. AI
+EDAM (Artif. Intell. Eng. Des. Anal. Manuf.) 34 (4), 458e476.
+Wang, L., Janssen, P., Stouffs, R., 2023b. Teaching Computational
+Design Optimization - an experimental course for performancebased building massing exploration. In: Digital Design Reconsidered - Proceedings of the 41st Conference on Education and
+Research in Computer Aided Architectural Design in Europe
+(ECAADe 2023), 1, pp. 179e188.
+Wang, L., Luo, T., Shao, T., Ji, G., 2023c. Reverse passive strategy
+exploration for building massing design-An optimization-aided
+approach. Int. J. Architect. Comput. 21 (3), 445e461.
+Wang, L., Tan, Z., Ji, G., 2016. Toward the wind-related building
+performative design. Living Systems and Micro-Utopias: Towards
+Continuous Designing. In: Proceedings of the 21st International
+Conference on Computer-Aided Architectural Design Research
+in Asia (CAADRIA 2016), pp. 109e218.
+Woodbury, R.F., Burrow, A.L., 2006. Whither design space? AIE EDAM:
+AI EDAM (Artif. Intell. Eng. Des. Anal. Manuf.) 20 (2), 63e82.
+Woodbury, R., Mohiuddin, A., Cichy, M., Mueller, V., 2017. Interactive design galleries: a general approach to interacting with
+design alternatives. Des. Stud. 52, 40e72.
+Wortmann, T., Nannicini, G., 2017. Introduction to architectural
+design optimization. In: Karakitsiou, A., Migdalas, A.,
+Rassia, S.T., Pardalos, P.M. (Eds.), City Networks: Collaboration
+and Planning for Health and Sustainability. Springer International Publishing, pp. 259e278.
+Wu, W.-L., 2022. Generative Design with Building Performance
+Optimization in the Initial Stage of Architectural Design Process.
+Cheng Kung University.
+Yi, Y.K., Malkawi, A.M., 2012. Site-specific optimal energy form
+generation based on hierarchical geometry relation. Autom.
+ConStruct. 26, 77e91.
+Yousif, S., Yan, W., 2019. Shape clustering using K-medoids in architectural form finding. In: Communications in Computer and Information Science, CCIS, 1028. Springer, Singapore, pp. 459e473.
+Zhang, H., Wang, L., Ji, G., 2021. The Synergy of building massing and
+facade - an Evo-Devo approach for performance-based design
+optimization combining facade design with building massing. In:
+Globa, T.T. S. Lo A., van Ameijde, J., Fingrut, A., Kim, N. (Eds.),
+Projections - Proceedings of the 26th International Conference of
+the Association for Computer-Aided Architectural Design
+Research in Asia, CAADRIA 2021, 1, pp. 451e460.
+Zhang, L., Zhang, L., Wang, Y., 2016. Shape optimization of freeform buildings based on solar radiation gain and space efficiency using a multi-objective genetic algorithm in the severe
+cold zones of China. Sol. Energy 132, 38e50.
+
+1422
+
+
