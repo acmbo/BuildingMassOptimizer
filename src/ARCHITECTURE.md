@@ -35,18 +35,23 @@ MassCreator/
 │       ├── building_mass.py      # BuildingMass dataclass + factory
 │       ├── cell_mode.py          # CellMode enum
 │       ├── grid_cell.py          # GridCell dataclass
-│       └── building_grid.py      # BuildingGrid dataclass + factory
+│       ├── building_grid.py      # BuildingGrid dataclass + factory
+│       ├── subtractor.py         # Subtractor, SubtractorType, SubtractionConfig
+│       └── subtraction_engine.py # apply_subtractions(), extract_bottom_wire()
 ├── test/                         # mirrors src/ layout (see Testing Strategy)
 │   ├── models/
-│   │   └── test_building_grid.py # unit tests for src/models/building_grid.py
+│   │   ├── test_building_grid.py # unit tests for src/models/building_grid.py
+│   │   └── test_subtraction.py   # unit tests for subtraction feature
 │   └── userInteraction/          # special folder: visualisation-based tests
 │       ├── test_floorgeneration.py  # visualisation: building mass only
-│       └── test_buildinggrid.py     # visualisation: building mass + grid
+│       ├── test_buildinggrid.py     # visualisation: building mass + grid
+│       └── test_subtraction.py      # visualisation: original vs subtracted mass
 └── doc/
     ├── requirements/
-    │   └── Models/
-    │       ├── BuildingMass.md    # Data structure spec
-    │       └── BuildingGrid.md    # Data structure spec
+    │   ├── Models/
+    │   │   ├── BuildingMass.md    # Data structure spec
+    │   │   └── BuildingGrid.md    # Data structure spec
+    │   └── SubtractiveFormGeneration.md  # Feature spec (Wang et al. 2019)
     └── paper/
 ```
 
@@ -65,6 +70,7 @@ Unit tests live in `test/` and **mirror the folder structure of `src/`**:
 | Source file | Test file |
 |---|---|
 | `src/models/building_grid.py` | `test/models/test_building_grid.py` |
+| `src/models/subtractor.py` + `subtraction_engine.py` | `test/models/test_subtraction.py` |
 | `src/models/building_mass.py` | `test/models/test_building_mass.py` *(planned)* |
 | `src/floorgeneration.py` | `test/test_floorgeneration.py` *(planned)* |
 
@@ -91,10 +97,12 @@ Each script in this folder corresponds to a feature or combination of features:
 |---|---|
 | `test_floorgeneration.py` | Building mass — transparent white solids, green floor wires |
 | `test_buildinggrid.py` | Building mass + grid — adds red wireframe cell boxes |
+| `test_subtraction.py` | Original mass (faint grey) vs subtracted mass (white) + red subtractor boxes |
 
 Run a visualisation test directly:
 ```bash
 conda run -n pyoccEnv python test/userInteraction/test_buildinggrid.py
+conda run -n pyoccEnv python test/userInteraction/test_subtraction.py
 ```
 
 ---
@@ -114,13 +122,18 @@ Pure OCC geometry primitives — no display code, no domain logic.
 ### `src/models/`
 Domain model layer. All classes are Python `@dataclass`s. No display code.
 
-| Class | File | Role |
+| Class / Module | File | Role |
 |---|---|---|
 | `FloorData` | `floor_data.py` | Geometry + metadata for one floor (solid, wire, elevation, height) |
 | `BuildingMass` | `building_mass.py` | Collection of floors; factory via `BuildingMass.create(polygon, floor_height, num_floors)` |
 | `CellMode` | `cell_mode.py` | Enum: `FIXED_SIZE` or `CELL_COUNT` |
 | `GridCell` | `grid_cell.py` | Single grid cell with `ix/iy/iz`, `min_pt`, `max_pt`, derived `center` |
 | `BuildingGrid` | `building_grid.py` | 3D grid aligned to building AABB; factory via `BuildingGrid.create(mass, mode, ...)` |
+| `SubtractorType` | `subtractor.py` | Enum: `VERTICAL` or `HORIZONTAL` |
+| `Subtractor` | `subtractor.py` | Rectangular void defined by XY position, width/depth, and Z range; validated on creation |
+| `SubtractionConfig` | `subtractor.py` | Holds all subtractors + constraint parameters (snap thresholds, plan size limits, boundary mode) |
+| `apply_subtractions` | `subtraction_engine.py` | Applies a `SubtractionConfig` to a `BuildingMass` → returns new `BuildingMass` with cut floors |
+| `extract_bottom_wire` | `subtraction_engine.py` | Extracts plan outline wire(s) from the bottom face of a cut floor solid |
 
 ---
 
@@ -131,8 +144,9 @@ BuildingMass
 ├── polygon_points, floor_height, num_floors, total_height
 └── floors: list[FloorData]
             ├── index, elevation, floor_height
-            ├── solid          → TopoDS_Shape  (extruded volume)
-            └── polygon_wire   → TopoDS_Shape  (plan outline at elevation)
+            ├── solid          → TopoDS_Shape  (extruded / cut volume)
+            └── polygon_wire   → TopoDS_Shape  (plan outline at elevation;
+                                                may be a compound of wires after subtraction)
 
 BuildingGrid
 ├── building_mass, cell_mode, cell_size
@@ -142,6 +156,21 @@ BuildingGrid
             ├── ix, iy, iz
             ├── min_pt, max_pt
             └── center  (derived)
+
+SubtractionConfig
+├── vertical_subtractors   : list[Subtractor]   (tall voids — courtyards, atriums, notches)
+├── horizontal_subtractors : list[Subtractor]   (flat voids — stilts, cascades, partial floors)
+├── vertical_snap_threshold     : float = 0.30
+├── horizontal_max_height_ratio : float = 0.30
+├── min_plan_size / max_plan_size : float
+├── boundary_constraint_enabled : bool  = True
+└── boundary_snap_fraction      : float = 0.10
+
+Subtractor
+├── x, y          – XY origin within building footprint
+├── width, depth  – plan extent
+├── z_bottom, z_top – absolute Z range
+└── subtractor_type : SubtractorType  (VERTICAL | HORIZONTAL)
 ```
 
 Key access helpers on `BuildingGrid`:
@@ -167,7 +196,7 @@ All shapes are `TopoDS_Shape` objects.
 | `BRepBuilderAPI_MakeFace` | Converts a wire into a planar face |
 | `BRepBuilderAPI_Transform` | Applies a `gp_Trsf` (translation, rotation, scale) |
 | `BRepPrimAPI_MakePrism` | Extrudes a face along a `gp_Vec` → solid |
-| `BRepPrimAPI_MakeBox` | Axis-aligned box from two corner points (used for grid cell visualisation) |
+| `BRepPrimAPI_MakeBox` | Axis-aligned box from two corner points (grid cell visualisation + subtractor solids) |
 | `Bnd_Box` + `brepbndlib` | Computes AABB of any shape or compound |
 | `BRep_Builder` + `TopoDS_Compound` | Combines multiple shapes into one compound |
 | `gp_Pnt / gp_Vec / gp_Trsf` | Geometric primitives |
@@ -175,6 +204,9 @@ All shapes are `TopoDS_Shape` objects.
 | `Prs3d_ShadingAspect` | Face fill colour and transparency |
 | `Prs3d_LineAspect` | Edge colour, line type, and width |
 | `Aspect_TOL_DOT / TOL_SOLID` | Line-type constants |
+| `BRepAlgoAPI_Cut` | Boolean cut — subtract one solid from another |
+| `BRepCheck_Analyzer` | Validate that a shape is geometrically sound after a cut |
+| `TopExp_Explorer` | Traverse shape topology (Solid → Shell → Face → Wire → …) |
 
 ### AABB note
 `brepbndlib` adds a small tolerance gap around solids. The actual AABB is
@@ -210,6 +242,8 @@ or use `gp_Trsf.SetScale` to shrink/grow the polygon per floor.
 ### Boolean operations
 `BRepAlgoAPI_Cut`, `BRepAlgoAPI_Fuse`, `BRepAlgoAPI_Common` — subtract
 courtyards, punch openings, or merge masses. All operands must be solids.
+Boolean subtraction is fully implemented via `apply_subtractions()` in
+`subtraction_engine.py`.
 
 ### Exporting geometry
 | Format | OCC API |
