@@ -4,6 +4,8 @@ from models.cell_mode import CellMode
 from models.grid_cell import GridCell
 from models.building_grid import BuildingGrid
 from models.subtractor import Subtractor, SubtractorType, SubtractionConfig
+from models.span_mode import SpanMode
+from models.column_grid import ColumnGrid
 
 __all__ = [
     "FloorData",
@@ -14,4 +16,6 @@ __all__ = [
     "Subtractor",
     "SubtractorType",
     "SubtractionConfig",
+    "SpanMode",
+    "ColumnGrid",
 ]
