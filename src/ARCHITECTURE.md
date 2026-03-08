@@ -37,21 +37,25 @@ MassCreator/
 │       ├── grid_cell.py          # GridCell dataclass
 │       ├── building_grid.py      # BuildingGrid dataclass + factory
 │       ├── subtractor.py         # Subtractor, SubtractorType, SubtractionConfig
-│       └── subtraction_engine.py # apply_subtractions(), extract_bottom_wire()
+│       ├── subtraction_engine.py # apply_subtractions(), extract_bottom_wire()
+│       ├── span_mode.py          # SpanMode enum
+│       └── column_grid.py        # ColumnGrid dataclass + factory
 ├── test/                         # mirrors src/ layout (see Testing Strategy)
 │   ├── models/
 │   │   ├── test_building_grid.py # unit tests for src/models/building_grid.py
-│   │   └── test_subtraction.py   # unit tests for subtraction feature
+│   │   ├── test_subtraction.py   # unit tests for subtraction feature
+│   │   └── test_column_grid.py   # unit tests for src/models/column_grid.py
 │   └── userInteraction/          # special folder: visualisation-based tests
 │       ├── test_floorgeneration.py  # visualisation: building mass only
 │       ├── test_buildinggrid.py     # visualisation: building mass + grid
-│       └── test_subtraction.py      # visualisation: original vs subtracted mass
+│       ├── test_subtraction.py      # visualisation: original vs subtracted mass
+│       └── test_column_grid.py      # visualisation: polygon footprint + column grid lines
 └── doc/
     ├── requirements/
-    │   ├── Models/
-    │   │   ├── BuildingMass.md    # Data structure spec
-    │   │   └── BuildingGrid.md    # Data structure spec
-    │   └── SubtractiveFormGeneration.md  # Feature spec (Wang et al. 2019)
+    │   ├── BuildingMassgeneration.md     # Feature spec: mass generation
+    │   ├── BuildingGrid.md               # Feature spec: 3D voxel grid
+    │   ├── SubtractiveFormGeneration.md  # Feature spec (Wang et al. 2019)
+    │   └── ColumnGrid.md                 # Feature spec: 2D structural column grid
     └── paper/
 ```
 
@@ -71,6 +75,7 @@ Unit tests live in `test/` and **mirror the folder structure of `src/`**:
 |---|---|
 | `src/models/building_grid.py` | `test/models/test_building_grid.py` |
 | `src/models/subtractor.py` + `subtraction_engine.py` | `test/models/test_subtraction.py` |
+| `src/models/column_grid.py` | `test/models/test_column_grid.py` |
 | `src/models/building_mass.py` | `test/models/test_building_mass.py` *(planned)* |
 | `src/floorgeneration.py` | `test/test_floorgeneration.py` *(planned)* |
 
@@ -98,6 +103,7 @@ Each script in this folder corresponds to a feature or combination of features:
 | `test_floorgeneration.py` | Building mass — transparent white solids, green floor wires |
 | `test_buildinggrid.py` | Building mass + grid — adds red wireframe cell boxes |
 | `test_subtraction.py` | Original mass (faint grey) vs subtracted mass (white) + red subtractor boxes |
+| `test_column_grid.py` | Polygon footprint with column grid lines overlaid; before/after subtractor snapping |
 
 Run a visualisation test directly:
 ```bash
@@ -134,6 +140,8 @@ Domain model layer. All classes are Python `@dataclass`s. No display code.
 | `SubtractionConfig` | `subtractor.py` | Holds all subtractors + constraint parameters (snap thresholds, plan size limits, boundary mode) |
 | `apply_subtractions` | `subtraction_engine.py` | Applies a `SubtractionConfig` to a `BuildingMass` → returns new `BuildingMass` with cut floors |
 | `extract_bottom_wire` | `subtraction_engine.py` | Extracts plan outline wire(s) from the bottom face of a cut floor solid |
+| `SpanMode` | `span_mode.py` | Enum: `FIXED_SPAN` or `SPAN_COUNT` |
+| `ColumnGrid` | `column_grid.py` | 2D structural column grid fitted to polygon bbox; factory via `ColumnGrid.create(mass, mode, ...)`; exposes `snap_to_grid()` and `align_subtractor()` |
 
 ---
 
@@ -173,9 +181,22 @@ Subtractor
 └── subtractor_type : SubtractorType  (VERTICAL | HORIZONTAL)
 ```
 
+ColumnGrid
+├── span_x, span_y           – column spacing in X and Y
+├── nx_spans, ny_spans        – number of spans (derived or user-supplied)
+├── origin_x, origin_y       – derived from polygon bbox min corner
+├── grid_lines_x             – absolute X positions of all column lines
+├── grid_lines_y             – absolute Y positions of all column lines
+├── snap_positions_x/y       – quarter-span snap positions on each axis
+└── total_width, total_depth – full plan area covered by the grid
+
 Key access helpers on `BuildingGrid`:
 - `grid.get_cell(ix, iy, iz)` — direct indexed lookup
 - `grid.cells_at_floor(iz)` — all cells for one floor level
+
+Key methods on `ColumnGrid`:
+- `grid.snap_to_grid(v, axis)` — nearest quarter-span position for a coordinate
+- `grid.align_subtractor(sub)` — snaps all four plan faces of a subtractor; returns `None` if snapped width/depth ≤ 0
 
 ---
 
