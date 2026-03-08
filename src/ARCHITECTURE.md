@@ -39,7 +39,8 @@ MassCreator/
 │       ├── subtractor.py         # Subtractor, SubtractorType, SubtractionConfig
 │       ├── subtraction_engine.py # apply_subtractions(), extract_bottom_wire()
 │       ├── span_mode.py          # SpanMode enum
-│       └── column_grid.py        # ColumnGrid dataclass + factory
+│       ├── column_grid.py        # ColumnGrid dataclass + factory
+│       └── individuum.py         # IndividuumParams, Individuum (EA genome + build pipeline)
 ├── test/                         # mirrors src/ layout (see Testing Strategy)
 │   ├── models/
 │   │   ├── test_building_grid.py # unit tests for src/models/building_grid.py
@@ -49,7 +50,8 @@ MassCreator/
 │       ├── test_floorgeneration.py  # visualisation: building mass only
 │       ├── test_buildinggrid.py     # visualisation: building mass + grid
 │       ├── test_subtraction.py      # visualisation: original vs subtracted mass
-│       └── test_column_grid.py      # visualisation: polygon footprint + column grid lines
+│       ├── test_column_grid.py      # visualisation: polygon footprint + column grid lines
+│       └── test_individuum.py       # visualisation: random EA individuum (genome → geometry)
 └── doc/
     ├── requirements/
     │   ├── BuildingMassgeneration.md     # Feature spec: mass generation
@@ -142,6 +144,8 @@ Domain model layer. All classes are Python `@dataclass`s. No display code.
 | `extract_bottom_wire` | `subtraction_engine.py` | Extracts plan outline wire(s) from the bottom face of a cut floor solid |
 | `SpanMode` | `span_mode.py` | Enum: `FIXED_SPAN` or `SPAN_COUNT` |
 | `ColumnGrid` | `column_grid.py` | 2D structural column grid fitted to polygon bbox; factory via `ColumnGrid.create(mass, mode, ...)`; exposes `snap_to_grid()` and `align_subtractor()` |
+| `IndividuumParams` | `individuum.py` | Fixed initialization parameters for one EA run (footprint, floors, subtractor counts, grid spans, constraints) |
+| `Individuum` | `individuum.py` | EA genome (normalized [0,1] floats) + `create_random()` + `build()` → `(original_mass, subtracted_mass, config)` |
 
 ---
 

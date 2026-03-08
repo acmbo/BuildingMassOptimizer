@@ -6,6 +6,7 @@ from models.building_grid import BuildingGrid
 from models.subtractor import Subtractor, SubtractorType, SubtractionConfig
 from models.span_mode import SpanMode
 from models.column_grid import ColumnGrid
+from models.individuum import IndividuumParams, Individuum
 
 __all__ = [
     "FloorData",
@@ -18,4 +19,6 @@ __all__ = [
     "SubtractionConfig",
     "SpanMode",
     "ColumnGrid",
+    "IndividuumParams",
+    "Individuum",
 ]

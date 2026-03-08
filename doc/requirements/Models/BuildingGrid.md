@@ -1,179 +1,303 @@
-# BuildingGrid – Specification
-
-## Purpose
-
-A `BuildingGrid` subdivides the Axis-Aligned Bounding Box (AABB) of a
-`BuildingMass` into a regular 3D grid of cells. Each cell spans:
-- **X / Y** — uniform width/depth derived from the AABB
-- **Z** — exactly one `floor_height` (cells are floor-aligned)
-
-The grid is the foundation for spatial analysis: GFA calculations, point
-classification, voxel-based operations, and visualisation.
+# Building Grid – Requirements
 
 ---
 
-## Input
+## 1. Principle Summary
 
-| Parameter | Type | Description |
-|---|---|---|
-| `building_mass` | `BuildingMass` | Source geometry and floor metadata |
-| `cell_mode` | `CellMode` | How cell size is determined (see below) |
-| `cell_size` | `float` *(optional)* | Fixed cell length in X and Y (used when `cell_mode = FIXED_SIZE`) |
-| `cell_count` | `int` *(optional)* | Target number of cells along the longest horizontal axis (used when `cell_mode = CELL_COUNT`) |
+The `BuildingGrid` is a **3D axis-aligned bounding box (AABB) grid** overlaid on a
+`BuildingMass`. It divides the building volume into a regular lattice of rectangular
+cells for spatial analysis, performance simulation, and visualisation purposes.
 
-### Cell modes
-
-```
-CellMode.FIXED_SIZE   – user provides an absolute cell_size (e.g. 1.5 m)
-CellMode.CELL_COUNT   – user provides a target count; cell_size is derived
-```
-
-For `CELL_COUNT`, the cell size is:
-```
-cell_size = max(aabb_width, aabb_depth) / cell_count
-```
-This keeps cells square and guarantees exactly `cell_count` divisions along
-the longest axis. The shorter axis gets `ceil(extent / cell_size)` cells.
+The grid is **floor-aligned in Z**: each cell layer corresponds exactly to one floor of
+the `BuildingMass`, so `cell_size_z == floor_height`. In the XY plane, cells are derived
+from the OCC AABB of all floor solids and a user-selected sizing strategy.
 
 ---
 
-## AABB computation
-
-The AABB is computed from the full `BuildingMass` (all floor solids combined):
+## 2. Relationship to `BuildingMass`
 
 ```
-xmin, ymin = min of all polygon x/y coordinates
-xmax, ymax = max of all polygon x/y coordinates
-zmin        = 0  (ground)
-zmax        = building_mass.total_height
+BuildingMass
+├── polygon_points: list[tuple[float,float,float]]   ← arbitrary polygon
+└── floors: list[FloorData]
+        └── solid    ← all solids are unioned into a compound for AABB
+
+BuildingGrid  (derived from BuildingMass)
+├── aabb_min, aabb_max       ← from OCC brepbndlib on all floor solids
+├── nx, ny, nz               ← cell counts per axis
+├── cell_size_x, cell_size_y ← actual cell dimensions (AABB evenly divided)
+├── cell_size_z              ← == floor_height
+└── cells: list[GridCell]    ← all cells in row-major order (iz, iy, ix)
 ```
 
-The AABB is stored on the grid so downstream code can reuse it without
-recomputing.
+The AABB is computed via `brepbndlib.Add(compound, bbox)` which adds a small OCC tolerance
+gap around the solids. Cell sizes are then derived by dividing the AABB dimensions evenly
+so that cells tile the box exactly.
 
 ---
 
-## Derived values (stored on the model)
+## 3. Data Model
 
-| Field | Formula |
-|---|---|
-| `aabb_min` | `(xmin, ymin, zmin)` |
-| `aabb_max` | `(xmax, ymax, zmax)` |
-| `cell_size_x` | `(xmax - xmin) / nx` — actual cell width after rounding |
-| `cell_size_y` | `(ymax - ymin) / ny` — actual cell depth after rounding |
-| `cell_size_z` | `floor_height` — same for every floor |
-| `nx` | `ceil((xmax - xmin) / cell_size)` |
-| `ny` | `ceil((ymax - ymin) / cell_size)` |
-| `nz` | `num_floors` |
-| `total_cells` | `nx × ny × nz` |
+### 3.1 `CellMode`
 
-Cells are **exactly axis-aligned to the AABB**. The last column/row may be
-slightly narrower than the rest if the AABB extent is not evenly divisible
-by `cell_size` — this is expected and acceptable.
+Determines how the nominal cell size is resolved.
 
----
+```
+CellMode  (enum)
+├── FIXED_SIZE   – user provides an absolute cell length in model units
+└── CELL_COUNT   – user provides a target cell count along the longest horizontal axis;
+                   cell size is derived so cells stay approximately square
+```
 
-## `GridCell` (per cell)
+### 3.2 `GridCell`
+
+A single cell in the grid.
 
 ```
 GridCell
-├── ix       : int    – column index (X axis, 0-based)
-├── iy       : int    – row index    (Y axis, 0-based)
-├── iz       : int    – floor index  (Z axis, 0-based, matches FloorData.index)
-├── min_pt   : tuple[float, float, float]  – (xmin, ymin, zmin) corner
-├── max_pt   : tuple[float, float, float]  – (xmax, ymax, zmax) corner
-└── center   : tuple[float, float, float]  – cell centre point (derived)
+├── ix      : int                        – column index along X (0-based)
+├── iy      : int                        – row index along Y (0-based)
+├── iz      : int                        – floor index along Z (0-based, matches FloorData.index)
+├── min_pt  : tuple[float, float, float] – minimum corner (xmin, ymin, zmin)
+├── max_pt  : tuple[float, float, float] – maximum corner (xmax, ymax, zmax)
+└── center  : tuple[float, float, float] – cell centre point (derived in __post_init__)
 ```
 
-`center` is derived in `__post_init__` and not stored as a separate init
-parameter.
-
----
-
-## `BuildingGrid` (top-level model)
+### 3.3 `BuildingGrid`
 
 ```
 BuildingGrid
 ├── building_mass  : BuildingMass
 ├── cell_mode      : CellMode
-├── cell_size      : float              – resolved cell size (same in X and Y)
-├── aabb_min       : tuple[float,float,float]
-├── aabb_max       : tuple[float,float,float]
-├── nx, ny, nz     : int                – grid dimensions
-├── cell_size_x    : float              – actual X cell width
-├── cell_size_y    : float              – actual Y cell depth
-├── cell_size_z    : float              – = floor_height
-├── total_cells    : int                – derived
-└── cells          : list[GridCell]     – flat list, row-major order (ix, iy, iz)
+├── cell_size      : float          – nominal cell size (input for FIXED_SIZE; derived for CELL_COUNT)
+├── aabb_min       : tuple[float, float, float]
+├── aabb_max       : tuple[float, float, float]
+├── nx             : int            – cell count along X
+├── ny             : int            – cell count along Y
+├── nz             : int            – cell count along Z (== num_floors)
+├── cell_size_x    : float          – actual cell width  (AABB width  / nx)
+├── cell_size_y    : float          – actual cell depth  (AABB depth  / ny)
+├── cell_size_z    : float          – cell height        (== floor_height)
+├── cells          : list[GridCell] – all cells, row-major order (iz, iy, ix)
+└── total_cells    : int (derived)  – nx × ny × nz
 ```
-
-### Factory classmethod
-
-```python
-BuildingGrid.create(building_mass, cell_mode, cell_size=None, cell_count=None)
-```
-
-Raises `ValueError` when:
-- `cell_mode = FIXED_SIZE` and `cell_size` is not provided or <= 0
-- `cell_mode = CELL_COUNT` and `cell_count` is not provided or < 1
 
 ---
 
-## Cell ordering
+## 4. Creation Modes
 
-Cells are stored in a **flat list** in row-major order:
+### FR-1  Two creation modes
 
+| Mode | User provides | Grid derives |
+|---|---|---|
+| `FIXED_SIZE` | `cell_size` — absolute cell length | `nx`, `ny` via `ceil(aabb_dim / cell_size)` |
+| `CELL_COUNT` | `cell_count` — target count along longest axis | `cell_size = max(width, depth) / cell_count`; then `nx`, `ny` |
+
+In both modes, `cell_size_x` and `cell_size_y` are computed by dividing the AABB width and
+depth by `nx` and `ny` respectively, so cells tile the bounding box exactly (they may differ
+slightly from the nominal `cell_size`).
+
+`nz` is always equal to `building_mass.num_floors`, and `cell_size_z` is always equal to
+`building_mass.floor_height`. These are not user-configurable.
+
+### FR-2  Factory signature
+
+```python
+BuildingGrid.create(
+    building_mass : BuildingMass,
+    cell_mode     : CellMode,
+    cell_size     : float | None = None,   # required for FIXED_SIZE
+    cell_count    : int   | None = None,   # required for CELL_COUNT
+) -> BuildingGrid
 ```
+
+### FR-3  Validation on construction
+
+| Condition | Error |
+|---|---|
+| `FIXED_SIZE` with `cell_size` missing, zero, or negative | `ValueError` |
+| `CELL_COUNT` with `cell_count` missing or < 1 | `ValueError` |
+| Unknown `cell_mode` | `ValueError` |
+
+---
+
+## 5. Cell Layout
+
+Cells are stored in **row-major order (iz, iy, ix)** — the outermost loop is Z (floor), then
+Y (row), then X (column). This matches the generation loop:
+
+```python
 for iz in range(nz):
     for iy in range(ny):
         for ix in range(nx):
-            cells.append(...)
+            min_pt = (xmin + ix * cell_size_x,
+                      ymin + iy * cell_size_y,
+                      zmin + iz * cell_size_z)
+            max_pt = (xmin + (ix+1) * cell_size_x,
+                      ymin + (iy+1) * cell_size_y,
+                      zmin + (iz+1) * cell_size_z)
 ```
 
-A helper method provides indexed access without manual arithmetic:
+### Access helpers
 
 ```python
-grid.get_cell(ix, iy, iz) -> GridCell
+grid.get_cell(ix, iy, iz) -> GridCell          # direct index lookup
+grid.cells_at_floor(iz)   -> list[GridCell]    # all cells on a single floor level
 ```
 
 ---
 
-## Access patterns
+## 6. Quality Gates
 
-| Use case | Access |
-|---|---|
-| All cells on floor 2 | `[c for c in grid.cells if c.iz == 2]` |
-| All cells in column (ix=0, iy=0) | `[c for c in grid.cells if c.ix == 0 and c.iy == 0]` |
-| Cell at specific index | `grid.get_cell(ix, iy, iz)` |
-| Grid dimensions | `grid.nx, grid.ny, grid.nz` |
-| AABB | `grid.aabb_min, grid.aabb_max` |
-| Total cell count | `grid.total_cells` |
+Each gate maps to one or more automated unit tests in `test/models/test_building_grid.py`.
+
+### QG-1  Cell mode and size are stored
+
+```python
+grid = BuildingGrid.create(mass, CellMode.FIXED_SIZE, cell_size=2.0)
+assert grid.cell_mode == CellMode.FIXED_SIZE
+assert abs(grid.cell_size - 2.0) < 1e-9
+```
+
+### QG-2  `nz` equals number of floors
+
+```python
+assert grid.nz == mass.num_floors
+```
+
+### QG-3  Total cell count
+
+```python
+assert grid.total_cells == grid.nx * grid.ny * grid.nz
+assert len(grid.cells)  == grid.total_cells
+```
+
+### QG-4  Cells tile the AABB exactly
+
+```python
+assert abs(grid.nx * grid.cell_size_x - (aabb_max[0] - aabb_min[0])) < 1e-9
+assert abs(grid.ny * grid.cell_size_y - (aabb_max[1] - aabb_min[1])) < 1e-9
+```
+
+### QG-5  `cell_size_z` equals `floor_height`
+
+```python
+assert abs(grid.cell_size_z - mass.floor_height) < 1e-9
+```
+
+### QG-6  Z range covers building height
+
+```python
+assert abs(grid.aabb_min[2] - 0.0)               < 1e-3
+assert abs(grid.aabb_max[2] - mass.total_height)  < 1e-3
+```
+
+### QG-7  `CELL_COUNT` derives cell size from longest axis
+
+```python
+# mass is 10 × 6, longest = 10; cell_count=5 → cell_size = 10/5 = 2.0
+grid = BuildingGrid.create(mass, CellMode.CELL_COUNT, cell_count=5)
+assert abs(grid.cell_size - 2.0) < 1e-9
+assert grid.nx == 5
+```
+
+### QG-8  First cell origin at AABB min; last cell corner at AABB max
+
+```python
+c_first = grid.get_cell(0, 0, 0)
+assert abs(c_first.min_pt[0] - grid.aabb_min[0]) < 1e-5
+c_last  = grid.get_cell(grid.nx-1, grid.ny-1, grid.nz-1)
+assert abs(c_last.max_pt[0]  - grid.aabb_max[0]) < 1e-5
+```
+
+### QG-9  Adjacent cells share a face
+
+```python
+c0 = grid.get_cell(0, 0, 0)
+c1 = grid.get_cell(1, 0, 0)
+assert abs(c0.max_pt[0] - c1.min_pt[0]) < 1e-5
+```
+
+### QG-10  `cells_at_floor` returns `nx × ny` cells with correct `iz`
+
+```python
+floor_cells = grid.cells_at_floor(0)
+assert len(floor_cells) == grid.nx * grid.ny
+assert all(c.iz == 0 for c in floor_cells)
+```
+
+### QG-11  Cell centre is the midpoint of `min_pt` / `max_pt`
+
+```python
+cell = grid.get_cell(0, 0, 0)
+assert abs(cell.center[0] - (cell.min_pt[0] + cell.max_pt[0]) / 2) < 1e-9
+```
+
+### QG-12  Invalid input raises `ValueError`
+
+```python
+with pytest.raises(ValueError):
+    BuildingGrid.create(mass, CellMode.FIXED_SIZE, cell_size=0)
+
+with pytest.raises(ValueError):
+    BuildingGrid.create(mass, CellMode.CELL_COUNT, cell_count=0)
+```
 
 ---
 
-## File layout
+## 7. OCC APIs Used
+
+| Operation | OCC API |
+|---|---|
+| Build compound of all floor solids | `BRep_Builder.MakeCompound` + `BRep_Builder.Add` |
+| Compute AABB of compound | `brepbndlib.Add(compound, bbox)` then `bbox.Get()` |
+
+Note: `brepbndlib` adds a small tolerance gap around each solid. Cell sizes are derived from
+the padded AABB, not the raw polygon extents. This is intentional — it ensures the grid
+fully encloses all geometry including OCC face normals at boundaries.
+
+---
+
+## 8. File Layout
 
 ```
 src/
-├── floorgeneration.py          (existing – OCC geometry primitives)
 └── models/
-    ├── __init__.py             (re-exports all models)
-    ├── floor_data.py           (existing)
-    ├── building_mass.py        (existing)
-    ├── cell_mode.py            (new – CellMode enum)
-    ├── grid_cell.py            (new – GridCell dataclass)
-    └── building_grid.py        (new – BuildingGrid dataclass + factory)
+    ├── cell_mode.py        – CellMode enum: FIXED_SIZE | CELL_COUNT
+    ├── grid_cell.py        – GridCell dataclass (ix, iy, iz, min_pt, max_pt, center)
+    └── building_grid.py    – BuildingGrid dataclass + factory + access helpers
+
+test/
+└── models/
+    └── test_building_grid.py   – unit tests covering QG-1 through QG-12
 
 test/userInteraction/
-    ├── test_floorgeneration.py (existing)
-    └── test_buildinggrid.py    (new – visualisation with mass + grid)
+    └── test_buildinggrid.py    – visual inspection: building mass with grid cells
+                                  drawn in red at each floor level
 ```
 
 ---
 
-## Notes for implementation
+## 9. Relationship to `ColumnGrid`
 
-- Use `enum.Enum` for `CellMode` — keeps the public API explicit and avoids magic strings.
-- `GridCell` is a plain dataclass with `eq=True` (default) so cells can be put in sets/dicts for lookup.
-- The grid does **not** classify cells as inside/outside the building polygon — that is a separate analysis step (point-in-polygon / solid classification) to be added later.
-- `BuildingGrid.create` should call `brepbndlib` on the compound of all floor solids to compute the AABB robustly, rather than doing it from raw polygon coordinates — this ensures correctness if the polygon is non-convex or if future offsets are applied.
+| | `BuildingGrid` | `ColumnGrid` |
+|---|---|---|
+| Purpose | 3-D voxel grid for spatial analysis | 2-D structural modulus for subtractor alignment |
+| Extent | OCC AABB of building solids (with tolerance gap) | XY bounding box of raw polygon points |
+| Z dimension | Yes — one cell layer per floor | No — plan-only (2-D), uniform across all floors |
+| Cell/span mode | `FIXED_SIZE` or `CELL_COUNT` (single size for both axes) | `FIXED_SPAN` or `SPAN_COUNT` (independent X and Y spans) |
+| Outputs | `GridCell` objects with `min_pt`, `max_pt`, `center` | Grid line coordinate lists only |
+| Snap operation | Not supported | `snap_to_grid()`, `align_subtractor()` |
+
+The two grids are **independent** and may coexist on the same `BuildingMass`.
+
+---
+
+## 10. Open Questions / Future Extensions
+
+| Topic | Note |
+|---|---|
+| **Inside/outside classification** | Cells could be tagged as inside, outside, or boundary relative to the building polygon for per-cell GFA computation. Requires a point-in-polygon test against `polygon_points`. |
+| **Post-subtraction update** | After `apply_subtractions()`, the floor solids change shape. `BuildingGrid` currently holds the original AABB and does not update. A `rebuild()` method or lazy re-creation from the modified mass would be needed. |
+| **Non-square cells** | `CELL_COUNT` derives a single `cell_size` from the longest axis, keeping cells approximately square. An independent `cell_count_x` / `cell_count_y` option could allow explicitly non-square cells. |
+| **Performance analysis** | Each `GridCell.center` is a natural sample point for daylight, solar, or CFD analysis. A future step would classify each cell (e.g. exterior-facing, interior, void) and attach analysis results. |
