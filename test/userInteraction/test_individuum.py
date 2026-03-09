@@ -9,6 +9,7 @@ Display legend:
   - Subtracted building mass                 → transparent white + cyan floor wires
   - Raw subtractor boxes (pre-alignment)     → red wireframe
   - Aligned subtractor boxes (post-grid)     → orange wireframe
+  - Building core boxes (full height)        → blue semi-transparent
 
 Run manually (not collected by pytest):
     conda run -n pyoccEnv python test/userInteraction/test_individuum.py
@@ -35,6 +36,7 @@ from OCC.Core.Quantity import (
     Quantity_NOC_WHITE,
     Quantity_NOC_RED,
     Quantity_NOC_GRAY60,
+    Quantity_NOC_CYAN1,
 )
 from OCC.Display.SimpleGui import init_display
 
@@ -64,6 +66,8 @@ params = IndividuumParams(
     boundary_snap_fraction=0.10,
     vertical_snap_threshold=0.30,
     horizontal_max_height_ratio=0.30,
+    core_generation_enabled=True,
+    max_face_distance=35.0,
 )
 
 rng = random.Random(SEED)
@@ -106,6 +110,9 @@ print(f"  horizontal: {len(config.horizontal_subtractors)}")
 print()
 print(f"Original mass:   {original_mass}")
 print(f"Subtracted mass: {subtracted_mass}")
+print(f"Building cores:  {len(subtracted_mass.cores)}")
+for i, c in enumerate(subtracted_mass.cores):
+    print(f"  Core {i}: {c}")
 print("=" * 60)
 
 
@@ -125,6 +132,7 @@ red    = Quantity_Color(Quantity_NOC_RED)
 gray   = Quantity_Color(Quantity_NOC_GRAY60)
 cyan   = Quantity_Color(0.2, 0.9, 0.9, Quantity_TOC_RGB)
 orange = Quantity_Color(1.0, 0.55, 0.1, Quantity_TOC_RGB)
+blue   = Quantity_Color(0.15, 0.45, 1.0, Quantity_TOC_RGB)
 
 
 # --- Original mass: very faint grey silhouette ---
@@ -217,6 +225,31 @@ for sub in all_aligned:
 
     context.Display(ais_box, False)
     context.SetDisplayMode(ais_box, 1, False)
+
+
+# --- Core boxes: solid blue, semi-transparent, full building height ---
+total_height = subtracted_mass.total_height
+for core in subtracted_mass.cores:
+    box_shape = BRepPrimAPI_MakeBox(
+        gp_Pnt(core.x_min, core.y_min, 0.0),
+        gp_Pnt(core.x_max, core.y_max, total_height),
+    ).Shape()
+
+    ais_core = AIS_Shape(box_shape)
+    core_drawer = ais_core.Attributes()
+
+    core_shading = Prs3d_ShadingAspect()
+    core_shading.SetColor(blue)
+    core_shading.SetTransparency(0.55)
+    core_drawer.SetShadingAspect(core_shading)
+
+    blue_edge = Prs3d_LineAspect(blue, Aspect_TOL_SOLID, 2.0)
+    core_drawer.SetWireAspect(blue_edge)
+    core_drawer.SetFaceBoundaryAspect(blue_edge)
+    core_drawer.SetFaceBoundaryDraw(True)
+
+    context.Display(ais_core, False)
+    context.SetDisplayMode(ais_core, 1, False)
 
 
 display.FitAll()

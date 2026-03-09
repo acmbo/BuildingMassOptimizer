@@ -8,10 +8,12 @@ interactively:
              Wall quads and top/bottom caps are drawn as Poly3DCollection.
              The original maximal volume is shown as a faint dashed wireframe
              (disable with --no-original).
+             Building cores are shown as semi-transparent blue boxes (full height).
 
   Figure 2 — Grid of 2D floor plan polygons, one subplot per floor.
              Interior voids (courtyards, atriums) are rendered as holes using
              matplotlib.path.Path with reversed sub-path winding.
+             Building core footprints are overlaid as solid blue rectangles.
 
 PNGs are saved alongside this script unless --save-dir is specified.
 
@@ -90,6 +92,8 @@ params = IndividuumParams(
     boundary_snap_fraction=0.10,
     vertical_snap_threshold=0.30,
     horizontal_max_height_ratio=0.30,
+    core_generation_enabled=True,
+    max_face_distance=35.0,
 )
 
 rng = random.Random(args.seed)
@@ -109,6 +113,9 @@ print(
     f"Subtractors: {len(config.vertical_subtractors)} vertical, "
     f"{len(config.horizontal_subtractors)} horizontal (post-constraints)"
 )
+print(f"Cores: {len(subtracted_mass.cores)}")
+for i, c in enumerate(subtracted_mass.cores):
+    print(f"  Core {i}: {c}")
 print("=" * 60)
 
 
@@ -206,6 +213,8 @@ _WALL_EDGE   = "#2a3a4a"   # wall edges
 _CAP_FACE    = "#f5f9ff"   # top cap fill (slightly lighter)
 _BOT_FACE    = "#b0c4d8"   # ground bottom cap
 _ORIG_COLOR  = "#9aabba"   # original volume wireframe
+_CORE_FACE   = "#3a7fd5"   # core box fill (blue)
+_CORE_EDGE   = "#1a3a80"   # core box edges
 
 fig_iso = plt.figure(figsize=(11, 10), facecolor="#ffffff")
 ax_iso: plt.Axes = fig_iso.add_subplot(111, projection="3d")
@@ -261,6 +270,31 @@ ax_iso.view_init(elev=35.264, azim=45)
 W = params.bbox_width
 D = params.bbox_depth
 H = params.total_height
+
+# Building cores — semi-transparent blue boxes spanning full height
+def _core_faces(core, z_bot: float, z_top: float):
+    """Six faces of a core box as lists of (x, y, z) vertices."""
+    x0, x1 = core.x_min, core.x_max
+    y0, y1 = core.y_min, core.y_max
+    return [
+        [(x0,y0,z_bot),(x1,y0,z_bot),(x1,y1,z_bot),(x0,y1,z_bot)],  # bottom
+        [(x0,y0,z_top),(x1,y0,z_top),(x1,y1,z_top),(x0,y1,z_top)],  # top
+        [(x0,y0,z_bot),(x1,y0,z_bot),(x1,y0,z_top),(x0,y0,z_top)],  # front
+        [(x0,y1,z_bot),(x1,y1,z_bot),(x1,y1,z_top),(x0,y1,z_top)],  # back
+        [(x0,y0,z_bot),(x0,y1,z_bot),(x0,y1,z_top),(x0,y0,z_top)],  # left
+        [(x1,y0,z_bot),(x1,y1,z_bot),(x1,y1,z_top),(x1,y0,z_top)],  # right
+    ]
+
+all_core_faces = []
+for core in subtracted_mass.cores:
+    all_core_faces.extend(_core_faces(core, 0.0, H))
+
+if all_core_faces:
+    ax_iso.add_collection3d(Poly3DCollection(
+        all_core_faces, closed=True,
+        facecolor=_CORE_FACE, edgecolor=_CORE_EDGE,
+        linewidth=0.8, alpha=0.50,
+    ))
 
 ax_iso.set_xlim(0, W)
 ax_iso.set_ylim(0, D)
@@ -379,6 +413,16 @@ for idx, floor in enumerate(subtracted_mass.floors):
             zorder=2,
         )
         ax.add_patch(patch)
+
+    # Layer 3 — core footprints (blue solid rectangles)
+    for core in floor.cores:
+        from matplotlib.patches import Rectangle
+        ax.add_patch(Rectangle(
+            (core.x_min, core.y_min),
+            core.width, core.depth,
+            facecolor="#3a7fd5", edgecolor="#1a3a80",
+            linewidth=1.2, alpha=0.70, zorder=3,
+        ))
 
     ax.set_title(
         f"Floor {floor.index}   z = {floor.elevation:.1f} m",

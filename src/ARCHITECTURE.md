@@ -20,7 +20,19 @@ conda activate pyoccEnv
 conda run -n pyoccEnv python -m pytest test/ -v
 ```
 
+If you run into 'not found errors', use
+
+
+```bash
+/home/acmbo/anaconda3/bin/conda run -n pyoccEnv python -m pytest test/ 
+```
+
 ---
+
+### Findings about OpenCascade (OCC)
+
+Read: doc/OCCFindings/pythonocc_7.9.3_findings.md
+
 
 ## Project structure
 
@@ -40,18 +52,22 @@ MassCreator/
 │       ├── subtraction_engine.py # apply_subtractions(), extract_bottom_wire()
 │       ├── span_mode.py          # SpanMode enum
 │       ├── column_grid.py        # ColumnGrid dataclass + factory
-│       └── individuum.py         # IndividuumParams, Individuum (EA genome + build pipeline)
+│       ├── individuum.py         # IndividuumParams, Individuum (EA genome + build pipeline)
+│       ├── building_core.py      # BuildingCore dataclass (center, footprint, column indices)
+│       └── building_core_engine.py  # find_building_cores() — centroid-first placement + grid snap
 ├── test/                         # mirrors src/ layout (see Testing Strategy)
 │   ├── models/
-│   │   ├── test_building_grid.py # unit tests for src/models/building_grid.py
-│   │   ├── test_subtraction.py   # unit tests for subtraction feature
-│   │   └── test_column_grid.py   # unit tests for src/models/column_grid.py
+│   │   ├── test_building_grid.py  # unit tests for src/models/building_grid.py
+│   │   ├── test_subtraction.py    # unit tests for subtraction feature
+│   │   ├── test_column_grid.py    # unit tests for src/models/column_grid.py
+│   │   └── test_building_core.py  # unit tests for BuildingCore + find_building_cores()
 │   └── userInteraction/          # special folder: visualisation-based tests
 │       ├── test_floorgeneration.py  # visualisation: building mass only
 │       ├── test_buildinggrid.py     # visualisation: building mass + grid
 │       ├── test_subtraction.py      # visualisation: original vs subtracted mass
 │       ├── test_column_grid.py      # visualisation: polygon footprint + column grid lines
-│       └── test_individuum.py       # visualisation: random EA individuum (genome → geometry)
+│       ├── test_individuum.py       # visualisation: random EA individuum (genome → geometry)
+│       └── test_building_core.py   # visualisation: footprint + core boxes + face-midpoint markers
 └── doc/
     ├── requirements/
     │   ├── BuildingMassgeneration.md     # Feature spec: mass generation
@@ -144,8 +160,10 @@ Domain model layer. All classes are Python `@dataclass`s. No display code.
 | `extract_bottom_wire` | `subtraction_engine.py` | Extracts plan outline wire(s) from the bottom face of a cut floor solid |
 | `SpanMode` | `span_mode.py` | Enum: `FIXED_SPAN` or `SPAN_COUNT` |
 | `ColumnGrid` | `column_grid.py` | 2D structural column grid fitted to polygon bbox; factory via `ColumnGrid.create(mass, mode, ...)`; exposes `snap_to_grid()` and `align_subtractor()` |
-| `IndividuumParams` | `individuum.py` | Fixed initialization parameters for one EA run (footprint, floors, subtractor counts, grid spans, constraints) |
+| `IndividuumParams` | `individuum.py` | Fixed initialization parameters for one EA run (footprint, floors, subtractor counts, grid spans, constraints, core toggle) |
 | `Individuum` | `individuum.py` | EA genome (normalized [0,1] floats) + `create_random()` + `build()` → `(original_mass, subtracted_mass, config)` |
+| `BuildingCore` | `building_core.py` | Vertical service zone: center XY, footprint size, column-grid cell indices; derived edge properties |
+| `find_building_cores` | `building_core_engine.py` | Places cores so every ground-floor face is ≤ max_face_distance from a core; snaps to column-grid cell centers |
 
 ---
 
@@ -154,11 +172,19 @@ Domain model layer. All classes are Python `@dataclass`s. No display code.
 ```
 BuildingMass
 ├── polygon_points, floor_height, num_floors, total_height
+├── cores: list[BuildingCore]   (empty unless core_generation_enabled)
 └── floors: list[FloorData]
             ├── index, elevation, floor_height
+            ├── cores: list[BuildingCore]   (same list as BuildingMass.cores)
             ├── solid          → TopoDS_Shape  (extruded / cut volume)
             └── polygon_wire   → TopoDS_Shape  (plan outline at elevation;
                                                 may be a compound of wires after subtraction)
+
+BuildingCore
+├── center_x, center_y   – snapped column-grid cell center
+├── width, depth         – footprint size (= span_x, span_y)
+├── column_ix, column_iy – cell indices in the column grid
+└── x_min/x_max/y_min/y_max  (derived)
 
 BuildingGrid
 ├── building_mass, cell_mode, cell_size
@@ -200,7 +226,7 @@ Key access helpers on `BuildingGrid`:
 
 Key methods on `ColumnGrid`:
 - `grid.snap_to_grid(v, axis)` — nearest quarter-span position for a coordinate
-- `grid.align_subtractor(sub)` — snaps all four plan faces of a subtractor; returns `None` if snapped width/depth ≤ 0
+- `grid.align_subtractor(sub, cores=None)` — snaps all four plan faces of a subtractor to quarter-span positions, then optionally to core edges; returns `None` if snapped width/depth ≤ 0
 
 ---
 

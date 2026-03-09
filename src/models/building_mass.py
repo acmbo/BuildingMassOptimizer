@@ -27,6 +27,9 @@ class BuildingMass:
     floors: list[FloorData]
     """Ordered list of floors, index 0 = ground floor."""
 
+    cores: list = field(default_factory=list)
+    """Building cores for this mass.  Populated by find_building_cores()."""
+
     total_height: float = field(init=False)
     """Derived total building height (floor_height × num_floors)."""
 

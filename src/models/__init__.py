@@ -7,6 +7,8 @@ from models.subtractor import Subtractor, SubtractorType, SubtractionConfig
 from models.span_mode import SpanMode
 from models.column_grid import ColumnGrid
 from models.individuum import IndividuumParams, Individuum
+from models.building_core import BuildingCore
+from models.building_core_engine import find_building_cores
 
 __all__ = [
     "FloorData",
@@ -21,4 +23,6 @@ __all__ = [
     "ColumnGrid",
     "IndividuumParams",
     "Individuum",
+    "BuildingCore",
+    "find_building_cores",
 ]

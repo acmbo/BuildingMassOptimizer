@@ -8,6 +8,7 @@ from models.subtractor import Subtractor, SubtractorType, SubtractionConfig
 from models.subtraction_engine import apply_subtractions
 from models.column_grid import ColumnGrid
 from models.span_mode import SpanMode
+from models.building_core_engine import find_building_cores
 
 
 # ---------------------------------------------------------------------------
@@ -83,6 +84,8 @@ class IndividuumParams:
     boundary_snap_fraction: float = 0.10
     vertical_snap_threshold: float = 0.30
     horizontal_max_height_ratio: float = 0.30
+    core_generation_enabled: bool = False
+    max_face_distance: float = 35.0
 
     def __post_init__(self) -> None:
         if self.floor_height <= 0:
@@ -345,5 +348,12 @@ class Individuum:
 
         # 6. Boolean subtraction
         subtracted_mass = apply_subtractions(original_mass, config)
+
+        # 7. Building core placement (optional)
+        if p.core_generation_enabled:
+            cores = find_building_cores(subtracted_mass, column_grid, p.max_face_distance)
+            subtracted_mass.cores = cores
+            for floor in subtracted_mass.floors:
+                floor.cores = cores
 
         return original_mass, subtracted_mass, config

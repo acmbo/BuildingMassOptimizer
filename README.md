@@ -7,6 +7,7 @@ conda activate pyocc
 python test/userInteraction/test_floorgeneration.py
 python test/userInteraction/test_buildinggrid.py
 python test/userInteraction/test_subtraction.py
+python test/userInteraction/test_building_core.py
 
 conda run -n pyoccEnv python test/userInteraction/test_individuum_viz.py
 conda run -n pyoccEnv python test/userInteraction/test_individuum_viz.py --seed 42 --no-original
@@ -14,4 +15,8 @@ conda run -n pyoccEnv python test/userInteraction/test_individuum_viz.py --save-
 
 
 ## Run general tests
-conda run -n pyoccEnv python -m pytest test/Models/ -v
+conda run -n pyoccEnv python -m pytest test -v
+
+
+## For claude
+/home/acmbo/anaconda3/bin/conda run -n pyoccEnv python -m pytest test/ 

@@ -168,12 +168,15 @@ class ColumnGrid:
             raise ValueError(f"axis must be 'x' or 'y', got {axis!r}")
         return min(positions, key=lambda p: abs(p - v))
 
-    def align_subtractor(self, sub):
+    def align_subtractor(self, sub, cores=None):
         """
         Snap all four plan faces of a Subtractor to the nearest quarter-span positions.
 
         The Z range (z_bottom, z_top) is preserved unchanged — Z is irrelevant to
         plan alignment and the same grid applies to every floor.
+
+        If cores is provided (a list of BuildingCore), a second pass snaps each face
+        to the nearest core edge when the gap is within half the smaller span dimension.
 
         Returns a new Subtractor with snapped x, y, width, depth, or None if the
         snapped width or depth is <= 0 (subtractor deactivated).
@@ -184,6 +187,13 @@ class ColumnGrid:
         snapped_x_far = self.snap_to_grid(sub.x + sub.width, "x")
         snapped_y = self.snap_to_grid(sub.y, "y")
         snapped_y_far = self.snap_to_grid(sub.y + sub.depth, "y")
+
+        if cores:
+            snapped_x, snapped_x_far, snapped_y, snapped_y_far = (
+                self._snap_to_cores(
+                    snapped_x, snapped_x_far, snapped_y, snapped_y_far, cores
+                )
+            )
 
         new_width = snapped_x_far - snapped_x
         new_depth = snapped_y_far - snapped_y
@@ -200,6 +210,38 @@ class ColumnGrid:
             z_top=sub.z_top,
             subtractor_type=sub.subtractor_type,
         )
+
+    def _snap_to_cores(
+        self,
+        x: float,
+        x_far: float,
+        y: float,
+        y_far: float,
+        cores,
+    ) -> tuple[float, float, float, float]:
+        """
+        Second-pass snap: move each of the four plan faces to the nearest core
+        edge if within half the smaller span dimension.
+        """
+        threshold = 0.5 * min(self.span_x, self.span_y)
+        core_edges_x: list[float] = []
+        core_edges_y: list[float] = []
+        for core in cores:
+            core_edges_x.extend([core.x_min, core.x_max])
+            core_edges_y.extend([core.y_min, core.y_max])
+
+        def snap_face(v: float, edges: list[float]) -> float:
+            best = min(edges, key=lambda e: abs(e - v))
+            return best if abs(best - v) <= threshold else v
+
+        if core_edges_x:
+            x = snap_face(x, core_edges_x)
+            x_far = snap_face(x_far, core_edges_x)
+        if core_edges_y:
+            y = snap_face(y, core_edges_y)
+            y_far = snap_face(y_far, core_edges_y)
+
+        return x, x_far, y, y_far
 
     # ------------------------------------------------------------------
     # Repr

@@ -1,4 +1,6 @@
-from dataclasses import dataclass
+from __future__ import annotations
+
+from dataclasses import dataclass, field
 
 from OCC.Core.TopoDS import TopoDS_Shape
 
@@ -21,3 +23,6 @@ class FloorData:
 
     polygon_wire: TopoDS_Shape
     """Closed wire at the bottom face elevation — use for floor-plan rendering and offsets."""
+
+    cores: list = field(default_factory=list)
+    """Building cores active on this floor.  Populated by find_building_cores()."""
