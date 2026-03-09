@@ -1,6 +1,6 @@
 # Bug: Building Core Placed Inside Subtracted Void
 
-**Status:** Open
+**Status:** Fixed
 **Affected module:** `src/models/building_core_engine.py` → `find_building_cores()`
 **Triggered by:** `Individuum.build()` when `core_generation_enabled = True`
 
@@ -13,142 +13,134 @@ atrium, corner notch, stilt zone), making the core geometrically outside the rem
 building mass.  The core then has no physical meaning — the circulation/evacuation zone it
 represents does not exist in the actual structure.
 
+Two distinct failure modes were identified and fixed:
+
+| # | Failure mode | Symptom |
+|---|---|---|
+| A | Ground-floor-only check | Core placed in a void created by a horizontal subtractor that only affects upper floors |
+| B | Center-point-only check | Core center lies in solid material, but the core's rectangular footprint partially overlaps the void |
+
 ---
 
 ## 2. Root Cause
 
-`find_building_cores()` places candidates in two situations:
+### 2A — Ground-floor-only validation
 
-| Placement trigger | Where the candidate comes from |
-|---|---|
-| Step 1 (seed) | Centroid of the ground-floor footprint *edge* midpoints |
-| Step 2 (iterative) | Midpoint of the farthest uncovered footprint face |
+`_snap_to_column_grid` validated candidate positions using `BRepClass3d_SolidClassifier`
+against the **ground-floor solid only**.  Horizontal subtractors that cut voids on upper
+floors were never checked, so a core could be placed at an XY position that is solid on
+the ground floor but void on floors 2–6.
 
-In both cases the raw candidate position is then passed to `_snap_to_column_grid()`, which
-iterates **all** column-grid cells across the original bounding box — including cells that
-lie entirely inside a subtracted void — and returns the nearest cell center.
+### 2B — Center-point-only validation
 
-**No check is performed to verify that the snapped center (or the raw candidate) falls
-within the solid material of the subtracted building mass.**
+Even after fix 2A, the check only tested the **center point** `(cx, cy)` of the candidate
+cell.  A core's rectangular footprint (one full column-grid span in X and Y) can extend
+into a void even when the center is in solid material — most commonly when the center sits
+near the boundary of a void.
 
-### Centroid-inside-void scenario
+### Original centroid-inside-void scenario (also fixed)
 
 After subtraction the ground-floor `polygon_wire` is a compound that includes both the outer
 boundary and the inner boundary of any cut (courtyard).  Computing the centroid as the
 average of *all* edge midpoints (inner + outer) biases the centroid towards the interior of
 a central courtyard, which is exactly the subtracted region.
 
-### Snap-into-void scenario
-
-Even when the raw candidate is on valid material, `_snap_to_column_grid()` may move it to
-the nearest column-grid cell center.  If the nearest cell center lies inside a void the core
-ends up there regardless.
-
 ---
 
-## 3. Failing Example
+## 3. Failing Examples
+
+### Example A — Upper-floor void
 
 ```
 Footprint: 50 × 50 m rectangle
-Subtractor: 20 × 20 m courtyard centered at (25, 25) spanning full height
+Horizontal subtractor: 20 × 20 m void at z=[7, 21] (floors 3–6)
 
-find_building_cores() computes:
-  centroid of outer-ring + inner-ring midpoints → approx (25, 25)
-  nearest column-grid cell center → also near (25, 25)
-  → BuildingCore placed at (25, 25) — inside the courtyard
+find_building_cores() (old code) computes:
+  centroid of ground-floor edge midpoints → approx (25, 25)
+  classify (25, 25) against ground-floor solid → TopAbs_IN  ✓  (ground floor is uncut)
+  → BuildingCore placed at (25, 25) — inside the upper-floor void
+```
+
+### Example B — Footprint clipping a void (seed 42)
+
+```
+Footprint: 20 × 20 m rectangle, 6 floors
+Subtractors: 1 vertical + 2 horizontal (floors 2–3 partially cut)
+
+find_building_cores() (fix A applied, not B) computes:
+  nearest valid cell center: (14, 10) — center is in solid material on all floors ✓
+  core footprint: x=[12,16], y=[8,12]
+  → corners at (12, 8) and (12, 12) are inside the void on floors 2–3
+  → core visually overlaps void in the floor plan
 ```
 
 ---
 
-## 4. Required Fix
+## 4. Fix Applied
 
-### 4.1 Guard in `_snap_to_column_grid`
+### 4A — Validate against all floor solids
 
-After selecting the best cell (or keeping the raw candidate), **verify that the resulting
-center lies inside the subtracted mass ground-floor solid** before accepting it.
-
-Extend the signature:
+`find_building_cores` builds a `floor_tests` list of `(solid, z_test)` pairs for
+**every** floor, not just the ground floor:
 
 ```python
-def _snap_to_column_grid(
-    px: float,
-    py: float,
-    column_grid: ColumnGrid,
-    ground_floor_solid,          # TopoDS_Shape — ground floor solid after subtraction
-) -> BuildingCore | None:        # None if no valid cell found
+floor_tests = [
+    (floor.solid, floor.elevation + floor.floor_height / 2)
+    for floor in mass.floors
+]
 ```
 
-Validation step (after selecting `best_cx`, `best_cy`):
+This list is passed to `_snap_to_column_grid`, which now checks every floor solid
+before accepting a candidate position.
 
-1. Classify the 3D point `(center_x, center_y, z_test)` where
-   `z_test = ground_floor_elevation + floor_height / 2` against the ground-floor solid using
-   `BRepClass3d_SolidClassifier`.
-2. Accept the position if the classifier reports `TopAbs_IN`.
-3. If the best cell is invalid, iterate all remaining cells sorted by distance and repeat
-   the check until a valid cell is found.
-4. If no cell passes — fall back to the raw candidate `(px, py)` and check it; if that also
-   fails return `None` so the caller can skip this candidate.
+### 4B — Validate the full footprint rectangle, not just the center
 
-### 4.2 Update `find_building_cores` signature
+`_snap_to_column_grid` uses a new helper `_footprint_valid(cx, cy, half_w, half_d, floor_tests)`
+that samples **5 points** of the core footprint rectangle:
 
-Pass the ground-floor solid to each `_snap_to_column_grid` call:
+- center `(cx, cy)`
+- 4 corners `(cx ± half_w, cy ± half_d)`
+
+All 5 points must be inside (or on the surface of) every floor solid.  This prevents a
+core from being placed at a position where the footprint rectangle clips a void even though
+the center point is in solid material.
 
 ```python
-ground_floor_solid = mass.floors[0].solid
+def _footprint_valid(cx, cy, half_w, half_d, floor_tests):
+    sample_points = [
+        (cx, cy),
+        (cx - half_w, cy - half_d), (cx + half_w, cy - half_d),
+        (cx - half_w, cy + half_d), (cx + half_w, cy + half_d),
+    ]
+    for solid, z in floor_tests:
+        for px, py in sample_points:
+            if not _is_inside_solid(px, py, solid, z):
+                return False
+    return True
 ```
 
-### 4.3 Handle `None` return in placement loop
+### Fallback logic (unchanged)
 
-**Seed (Step 1):**
-If the centroid snap returns `None`, try each face midpoint in turn (sorted by centrality)
-until a valid position is found.  If none is found raise `ValueError` with a descriptive
-message.
-
-**Iterative (Step 2):**
-If the snap of the farthest face midpoint returns `None`, the face midpoint itself is
-guaranteed to be on the boundary — use the raw face-midpoint position as the fallback core
-center (without snapping) so placement always progresses.
-
-### 4.4 Extractor note
-
-The face-midpoint positions extracted from `polygon_wire` are **on** the footprint boundary,
-not inside the void, so they are always valid fallback positions.  The bug only manifests
-during the snap step that moves the candidate off the boundary into the interior.
+The fallback hierarchy in `find_building_cores` when `_snap_to_column_grid` returns `None`
+is unchanged: try each face midpoint sorted by centrality; raise `ValueError` if none works.
 
 ---
 
-## 5. OCC API for Point Classification
-
-```python
-from OCC.Core.BRepClass3d import BRepClass3d_SolidClassifier
-from OCC.Core.gp import gp_Pnt
-from OCC.Core.TopAbs import TopAbs_IN
-
-classifier = BRepClass3d_SolidClassifier(solid)
-classifier.Perform(gp_Pnt(cx, cy, z_test), tolerance=1e-3)
-is_inside = classifier.State() == TopAbs_IN
-```
-
-The classifier must be re-instantiated (or reset with `.Load(solid)`) for each solid it
-tests against — it does **not** support changing the solid after construction.
-
----
-
-## 6. Acceptance Criteria
-
-1. When a subtractor creates a central courtyard spanning ≥ 50 % of the footprint area,
-   no `BuildingCore` center falls inside the courtyard rectangle.
-2. When every column-grid cell center is inside a void, the engine falls back to raw face
-   midpoints without raising an unhandled exception.
-3. All 37 existing unit tests in `test/models/test_building_core.py` continue to pass.
-4. A new unit test in `test/models/test_building_core.py` covering the courtyard scenario
-   (criterion 1) is added and passes.
-
----
-
-## 7. Files to Modify
+## 5. Files Modified
 
 | File | Change |
 |---|---|
-| `src/models/building_core_engine.py` | Add OCC solid classification; update `_snap_to_column_grid`; update fallback logic in `find_building_cores` |
-| `test/models/test_building_core.py` | Add regression test for courtyard + core placement |
+| `src/models/building_core_engine.py` | Replaced `_is_inside_all_floors` (center-only) with `_footprint_valid` (center + 4 corners); build `floor_tests` from all floors instead of ground floor only |
+| `test/models/test_building_core.py` | Added `TestCoreNotInsideCourtyard` (full-height courtyard) and `TestCoreNotInsideUpperFloorVoid` (partial-height horizontal void) regression tests |
+
+---
+
+## 6. Acceptance Criteria (all met)
+
+1. When a subtractor creates a central courtyard spanning ≥ 50 % of the footprint area,
+   no `BuildingCore` footprint overlaps the courtyard rectangle. ✓
+2. When a horizontal subtractor creates a void only on upper floors, no core footprint
+   overlaps the void on those floors. ✓
+3. When every column-grid cell center is inside a void, the engine falls back to raw face
+   midpoints without raising an unhandled exception. ✓
+4. All unit tests in `test/models/test_building_core.py` pass (41/41). ✓

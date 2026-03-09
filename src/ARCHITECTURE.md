@@ -163,7 +163,7 @@ Domain model layer. All classes are Python `@dataclass`s. No display code.
 | `IndividuumParams` | `individuum.py` | Fixed initialization parameters for one EA run (footprint, floors, subtractor counts, grid spans, constraints, core toggle) |
 | `Individuum` | `individuum.py` | EA genome (normalized [0,1] floats) + `create_random()` + `build()` → `(original_mass, subtracted_mass, config)` |
 | `BuildingCore` | `building_core.py` | Vertical service zone: center XY, footprint size, column-grid cell indices; derived edge properties |
-| `find_building_cores` | `building_core_engine.py` | Places cores so every ground-floor face is ≤ max_face_distance from a core; snaps to column-grid cell centers |
+| `find_building_cores` | `building_core_engine.py` | Places cores so every ground-floor face is ≤ max_face_distance from a core; snaps to column-grid cell centers; validates candidate footprint (center + 4 corners) against every floor solid so cores are never placed inside voids on any floor |
 
 ---
 
@@ -227,6 +227,9 @@ Key access helpers on `BuildingGrid`:
 Key methods on `ColumnGrid`:
 - `grid.snap_to_grid(v, axis)` — nearest quarter-span position for a coordinate
 - `grid.align_subtractor(sub, cores=None)` — snaps all four plan faces of a subtractor to quarter-span positions, then optionally to core edges; returns `None` if snapped width/depth ≤ 0
+
+Key helpers in `building_core_engine`:
+- `_footprint_valid(cx, cy, half_w, half_d, floor_tests)` — returns `True` only when the core rectangle (center + 4 corners) lies inside solid material on every floor; used by `_snap_to_column_grid` to reject cells whose footprint clips a void
 
 ---
 

@@ -377,5 +377,77 @@ class TestCoreNotInsideCourtyard(unittest.TestCase):
             )
 
 
+# ---------------------------------------------------------------------------
+# Regression: core must not be placed inside a void that only spans upper floors
+# ---------------------------------------------------------------------------
+
+class TestCoreNotInsideUpperFloorVoid(unittest.TestCase):
+    """
+    50 × 50 m building with a horizontal subtractor that cuts away the center
+    only on floors 3-6 (z=7 to z=21).  The ground floor is untouched, so a
+    naive implementation (checking ground floor only) would incorrectly place
+    a core at (25, 25) — inside the upper void.  The fix must reject any XY
+    position that intersects a void on any floor.
+    """
+
+    POLYGON = [(0, 0, 0), (50, 0, 0), (50, 50, 0), (0, 50, 0)]
+    FLOOR_HEIGHT = 3.5
+    NUM_FLOORS = 6
+    # Void cuts the center of floors 3-6: z=[7, 21]
+    VOID_X = 15.0
+    VOID_Y = 15.0
+    VOID_W = 20.0
+    VOID_D = 20.0
+    VOID_Z_BOT = 7.0    # top of floor 2
+    VOID_Z_TOP = 21.0   # top of floor 6
+
+    def setUp(self):
+        from models.subtraction_engine import apply_subtractions
+
+        mass = BuildingMass.create(self.POLYGON, self.FLOOR_HEIGHT, self.NUM_FLOORS)
+        upper_void = Subtractor(
+            x=self.VOID_X,
+            y=self.VOID_Y,
+            width=self.VOID_W,
+            depth=self.VOID_D,
+            z_bottom=self.VOID_Z_BOT,
+            z_top=self.VOID_Z_TOP,
+            subtractor_type=SubtractorType.HORIZONTAL,
+        )
+        config = SubtractionConfig(
+            vertical_subtractors=[],
+            horizontal_subtractors=[upper_void],
+            min_plan_size=1.0,
+            max_plan_size=100.0,
+        )
+        self.subtracted_mass = apply_subtractions(mass, config)
+        self.grid = ColumnGrid.create(
+            mass, SpanMode.FIXED_SPAN, span_x=5.0, span_y=5.0
+        )
+        self.cores = find_building_cores(
+            self.subtracted_mass, self.grid, max_face_distance=35.0
+        )
+
+    def test_at_least_one_core_placed(self):
+        self.assertGreaterEqual(len(self.cores), 1)
+
+    def test_no_core_center_inside_upper_void(self):
+        """No core XY center must fall inside the upper void footprint."""
+        void_xmin = self.VOID_X
+        void_xmax = self.VOID_X + self.VOID_W
+        void_ymin = self.VOID_Y
+        void_ymax = self.VOID_Y + self.VOID_D
+        for c in self.cores:
+            inside_x = void_xmin < c.center_x < void_xmax
+            inside_y = void_ymin < c.center_y < void_ymax
+            self.assertFalse(
+                inside_x and inside_y,
+                msg=(
+                    f"Core at ({c.center_x:.2f}, {c.center_y:.2f}) is inside the upper-floor void "
+                    f"[{void_xmin},{void_xmax}] × [{void_ymin},{void_ymax}]"
+                ),
+            )
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -159,22 +159,46 @@ A face is **covered** if `d ≤ max_face_distance` for at least one core in the 
 
 Given a candidate XY point `(px, py)`:
 
-1. Find the nearest column-grid cell center:
+1. Find the nearest column-grid cell center whose **entire footprint rectangle** lies
+   inside solid material on every floor:
    - Cell centers lie at `(grid_lines_x[i] + span_x/2, grid_lines_y[j] + span_y/2)` for all
      `(i, j)` pairs (cells, not column lines).
-   - Select the cell `(i*, j*)` minimising Euclidean distance to `(px, py)`.
-2. Accept snap if `distance ≤ 0.5 × min(span_x, span_y)`.
-3. If no cell is within the threshold, use the raw candidate position (no snap).
-4. Return `BuildingCore(center_x, center_y, width=span_x, depth=span_y, column_ix, column_iy)`.
+   - Sort all cells by Euclidean distance to `(px, py)`.
+   - Walk in distance order; for each cell validate 5 sample points of the core footprint
+     (center + 4 corners at `cell_cx ± span_x/2`, `cell_cy ± span_y/2`) against the solid
+     on **every** floor using `BRepClass3d_SolidClassifier`.  Accept the first cell where
+     all 5 points classify as `TopAbs_IN` or `TopAbs_ON` on every floor.
+2. Accept snap if the nearest valid cell is within `distance ≤ 0.5 × min(span_x, span_y)`.
+3. If the nearest valid cell is beyond the threshold, prefer the raw candidate `(px, py)`
+   provided its footprint also passes the 5-point check on every floor.
+4. If neither succeeds, return `None` so the caller can supply a fallback.
+5. Return `BuildingCore(center_x, center_y, width=span_x, depth=span_y, column_ix, column_iy)`.
+
+**Rationale for footprint-area check:** checking only the center point allows the core
+rectangle to clip a void when the center sits near a void boundary.  Checking all 4 corners
+in addition to the center catches this case without requiring a full polygon intersection.
 
 ### 4.5 Placement Loop
 
 ```
+# Build (solid, z_test) pairs for every floor — used to reject void positions
+floor_tests = [(floor.solid, floor.elevation + floor.floor_height / 2)
+               for floor in mass.floors]
+
 cores = []
 
 # Step 1: place first core at footprint centroid
 centroid = compute_polygon_centroid(footprint_edges)
-cores.append(snap_to_column_grid(centroid, column_grid))
+seed = snap_to_column_grid(centroid, column_grid, floor_tests)
+if seed is None:
+    # Centroid in void — try face midpoints sorted by centrality
+    for fm in sorted(face_midpoints, by_distance_to=centroid):
+        seed = snap_to_column_grid(fm, column_grid, floor_tests)
+        if seed is not None:
+            break
+if seed is None:
+    raise ValueError("no valid core position found")
+cores.append(seed)
 
 # Step 2: iteratively cover uncovered faces
 while True:
@@ -182,10 +206,17 @@ while True:
     if not uncovered:
         break
     farthest = max(uncovered, key=lambda f: min_distance_to_cores(f, cores))
-    cores.append(snap_to_column_grid(farthest, column_grid))
+    core = snap_to_column_grid(farthest, column_grid, floor_tests)
+    if core is None:
+        # Fallback: place raw face midpoint (always on solid boundary)
+        core = BuildingCore(center_x=farthest.x, center_y=farthest.y, ...)
+    cores.append(core)
 
 return cores
 ```
+
+`snap_to_column_grid` validates the full footprint rectangle (center + 4 corners) on every
+floor solid before accepting a position (see §4.4).
 
 Guard: if the loop runs more than `len(face_midpoints)` iterations without convergence, raise:
 
