@@ -9,8 +9,11 @@ footprint polygon is within max_face_distance (default 35 m) of the nearest core
 Placement starts at the footprint centroid and iteratively adds cores at the farthest
 uncovered face until all faces are covered.
 
-Each candidate position is snapped to the nearest column-grid cell center (accepted if
-the distance is ≤ half the smaller span dimension).
+Each candidate position is snapped to the nearest column-grid cell center whose center
+lies inside the subtracted ground-floor solid (accepted if the distance is ≤ half the
+smaller span dimension).  If no valid cell is within the snap threshold the raw candidate
+position is used, provided it too lies inside the solid.  If neither succeeds the function
+returns None so the caller can supply a safe fallback.
 """
 from __future__ import annotations
 
@@ -18,9 +21,11 @@ import math
 from typing import NamedTuple
 
 from OCC.Core.TopExp import TopExp_Explorer
-from OCC.Core.TopAbs import TopAbs_EDGE
+from OCC.Core.TopAbs import TopAbs_EDGE, TopAbs_IN, TopAbs_ON
 from OCC.Core.BRepAdaptor import BRepAdaptor_Curve
 from OCC.Core.TopoDS import Edge as topods_Edge
+from OCC.Core.BRepClass3d import BRepClass3d_SolidClassifier
+from OCC.Core.gp import gp_Pnt
 
 from models.building_core import BuildingCore
 from models.building_mass import BuildingMass
@@ -64,40 +69,75 @@ def _polygon_centroid(midpoints: list[_FaceMidpoint]) -> tuple[float, float]:
     return cx, cy
 
 
-def _snap_to_column_grid(px: float, py: float, column_grid: ColumnGrid) -> BuildingCore:
+def _is_inside_solid(cx: float, cy: float, solid, z_test: float) -> bool:
     """
-    Snap a candidate XY point to the nearest column-grid cell center.
+    Return True when (cx, cy, z_test) lies inside or on the surface of solid.
 
-    The snap is accepted when the distance to the nearest cell center is ≤
-    0.5 × min(span_x, span_y).  If no cell is within the threshold, the raw
-    candidate position is kept while the nearest cell indices are still recorded.
+    Uses BRepClass3d_SolidClassifier.  Both TopAbs_IN and TopAbs_ON are
+    accepted so that points on the footprint boundary (face midpoints) are
+    treated as valid material.
+    """
+    classifier = BRepClass3d_SolidClassifier(solid)
+    classifier.Perform(gp_Pnt(cx, cy, z_test), 1e-3)
+    return classifier.State() in (TopAbs_IN, TopAbs_ON)
+
+
+def _snap_to_column_grid(
+    px: float,
+    py: float,
+    column_grid: ColumnGrid,
+    ground_floor_solid,
+    z_test: float,
+) -> BuildingCore | None:
+    """
+    Snap a candidate XY point to the nearest column-grid cell center that lies
+    inside the subtracted ground-floor solid.
+
+    Strategy
+    --------
+    1. Collect all cells sorted by distance from (px, py).
+    2. Find the nearest cell whose center is inside the solid.
+       - If that cell is within the snap threshold: use its center.
+       - If it is beyond the threshold: prefer the raw candidate (px, py)
+         when it is itself inside the solid.
+    3. Return None when no valid position can be found at all.
     """
     snap_threshold = 0.5 * min(column_grid.span_x, column_grid.span_y)
 
-    best_dist = math.inf
-    best_ix = 0
-    best_iy = 0
-    best_cx = px
-    best_cy = py
-
+    # Build sorted list of (distance, ix, iy, cell_cx, cell_cy)
+    cells: list[tuple[float, int, int, float, float]] = []
     for i in range(len(column_grid.grid_lines_x) - 1):
         cell_cx = column_grid.grid_lines_x[i] + column_grid.span_x / 2
         for j in range(len(column_grid.grid_lines_y) - 1):
             cell_cy = column_grid.grid_lines_y[j] + column_grid.span_y / 2
             d = math.sqrt((px - cell_cx) ** 2 + (py - cell_cy) ** 2)
-            if d < best_dist:
-                best_dist = d
-                best_ix = i
-                best_iy = j
-                best_cx = cell_cx
-                best_cy = cell_cy
+            cells.append((d, i, j, cell_cx, cell_cy))
+    cells.sort()
 
-    # Use snapped center only when within threshold; otherwise keep raw position
-    # but still record the nearest cell indices.
-    if best_dist <= snap_threshold:
+    # Walk cells in distance order; stop at first one inside the solid
+    valid_cell: tuple[float, int, int, float, float] | None = None
+    for entry in cells:
+        d, i, j, cell_cx, cell_cy = entry
+        if _is_inside_solid(cell_cx, cell_cy, ground_floor_solid, z_test):
+            valid_cell = entry
+            break
+
+    if valid_cell is None:
+        # No column-grid cell is on valid material at all
+        return None
+
+    best_d, best_ix, best_iy, best_cx, best_cy = valid_cell
+
+    if best_d <= snap_threshold:
+        # Nearest valid cell is close enough — snap to it
         center_x, center_y = best_cx, best_cy
     else:
-        center_x, center_y = px, py
+        # Nearest valid cell is far — prefer raw candidate if it is inside the solid
+        if _is_inside_solid(px, py, ground_floor_solid, z_test):
+            center_x, center_y = px, py
+        else:
+            # Raw candidate is inside a void; use the nearest valid cell anyway
+            center_x, center_y = best_cx, best_cy
 
     return BuildingCore(
         center_x=center_x,
@@ -153,7 +193,7 @@ def find_building_cores(
 
     Raises
     ------
-    ValueError   if the footprint has no edges.
+    ValueError   if the footprint has no edges or no valid seed position exists.
     RuntimeError if the placement loop fails to converge.
     """
     if not mass.floors:
@@ -163,11 +203,31 @@ def find_building_cores(
     if not face_midpoints:
         raise ValueError("Ground-floor polygon wire has no edges")
 
+    ground_floor_solid = mass.floors[0].solid
+    z_test = mass.floors[0].elevation + mass.floors[0].floor_height / 2
+
     cores: list[BuildingCore] = []
 
     # Step 1: seed with the footprint centroid
     cx, cy = _polygon_centroid(face_midpoints)
-    cores.append(_snap_to_column_grid(cx, cy, column_grid))
+    seed = _snap_to_column_grid(cx, cy, column_grid, ground_floor_solid, z_test)
+
+    if seed is None:
+        # Centroid fell inside a void — try each face midpoint as a fallback seed,
+        # sorted from most central to most peripheral (closest to centroid first).
+        candidates = sorted(face_midpoints, key=lambda f: math.sqrt((f.x - cx) ** 2 + (f.y - cy) ** 2))
+        for fm in candidates:
+            seed = _snap_to_column_grid(fm.x, fm.y, column_grid, ground_floor_solid, z_test)
+            if seed is not None:
+                break
+
+    if seed is None:
+        raise ValueError(
+            "Building core placement failed: no valid position found inside the "
+            "subtracted ground-floor solid. The footprint may be fully subtracted."
+        )
+
+    cores.append(seed)
 
     # Step 2: iteratively cover uncovered faces
     max_iterations = len(face_midpoints)
@@ -189,7 +249,23 @@ def find_building_cores(
             )
 
         farthest = max(uncovered, key=lambda f: _min_distance_to_cores(f, cores))
-        cores.append(_snap_to_column_grid(farthest.x, farthest.y, column_grid))
+        core = _snap_to_column_grid(
+            farthest.x, farthest.y, column_grid, ground_floor_solid, z_test
+        )
+        if core is None:
+            # Defensive fallback: face midpoints are on the solid boundary so
+            # _snap_to_column_grid should never return None here.  Place at raw
+            # midpoint with index 0,0 to guarantee progress.
+            core = BuildingCore(
+                center_x=farthest.x,
+                center_y=farthest.y,
+                width=column_grid.span_x,
+                depth=column_grid.span_y,
+                column_ix=0,
+                column_iy=0,
+            )
+
+        cores.append(core)
         iterations += 1
 
     return cores

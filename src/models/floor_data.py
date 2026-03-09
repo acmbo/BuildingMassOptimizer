@@ -22,7 +22,13 @@ class FloorData:
     """Extruded solid volume — use for Booleans, area/volume analysis, and export."""
 
     polygon_wire: TopoDS_Shape
-    """Closed wire at the bottom face elevation — use for floor-plan rendering and offsets."""
+    """Closed wire at the bottom face elevation — use for floor-plan rendering and offsets.
+
+    After subtraction this becomes a compound of wires: the outer boundary plus one inner
+    wire per void (courtyard, atrium, notch).  The wires are not tagged — use
+    BRepClass3d_SolidClassifier on ``solid`` to distinguish inside from outside material,
+    rather than trying to parse outer-vs-inner wire orientation from this compound.
+    """
 
     cores: list = field(default_factory=list)
     """Building cores active on this floor.  Populated by find_building_cores()."""

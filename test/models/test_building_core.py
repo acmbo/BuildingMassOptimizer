@@ -17,6 +17,7 @@ from models import (
     ColumnGrid,
     Subtractor,
     SubtractorType,
+    SubtractionConfig,
     BuildingCore,
     find_building_cores,
 )
@@ -306,6 +307,74 @@ class TestAlignSubtractorWithCores(unittest.TestCase):
         self.assertIsNotNone(result_none)
         self.assertAlmostEqual(result_no_cores.x, result_none.x)
         self.assertAlmostEqual(result_no_cores.y, result_none.y)
+
+
+# ---------------------------------------------------------------------------
+# Regression: core must not be placed inside a subtracted courtyard void
+# ---------------------------------------------------------------------------
+
+class TestCoreNotInsideCourtyard(unittest.TestCase):
+    """
+    50 × 50 m building with a large central courtyard (20 × 20 m).
+    After subtraction the centroid of all edge midpoints (inner + outer ring)
+    is biased toward the void center.  The fix must place the core on solid
+    material, not inside the courtyard.
+    """
+
+    COURTYARD_POLYGON = [(0, 0, 0), (50, 0, 0), (50, 50, 0), (0, 50, 0)]
+    # Courtyard occupies x=[15,35], y=[15,35]
+    COURTYARD_X = 15.0
+    COURTYARD_Y = 15.0
+    COURTYARD_W = 20.0
+    COURTYARD_D = 20.0
+
+    def setUp(self):
+        from models.subtraction_engine import apply_subtractions
+
+        mass = BuildingMass.create(
+            self.COURTYARD_POLYGON, floor_height=3.5, num_floors=6
+        )
+        total_h = 3.5 * 6
+        courtyard = Subtractor(
+            x=self.COURTYARD_X,
+            y=self.COURTYARD_Y,
+            width=self.COURTYARD_W,
+            depth=self.COURTYARD_D,
+            z_bottom=0.0,
+            z_top=total_h,
+            subtractor_type=SubtractorType.VERTICAL,
+        )
+        config = SubtractionConfig(
+            vertical_subtractors=[courtyard],
+            horizontal_subtractors=[],
+            min_plan_size=1.0,
+            max_plan_size=100.0,
+        )
+        self.subtracted_mass = apply_subtractions(mass, config)
+        self.grid = ColumnGrid.create(
+            mass, SpanMode.FIXED_SPAN, span_x=5.0, span_y=5.0
+        )
+        self.cores = find_building_cores(self.subtracted_mass, self.grid, max_face_distance=35.0)
+
+    def test_at_least_one_core_placed(self):
+        self.assertGreaterEqual(len(self.cores), 1)
+
+    def test_no_core_center_inside_courtyard(self):
+        """Core centers must not fall within the courtyard bounding box."""
+        void_xmin = self.COURTYARD_X
+        void_xmax = self.COURTYARD_X + self.COURTYARD_W
+        void_ymin = self.COURTYARD_Y
+        void_ymax = self.COURTYARD_Y + self.COURTYARD_D
+        for c in self.cores:
+            inside_x = void_xmin < c.center_x < void_xmax
+            inside_y = void_ymin < c.center_y < void_ymax
+            self.assertFalse(
+                inside_x and inside_y,
+                msg=(
+                    f"Core at ({c.center_x}, {c.center_y}) is inside the courtyard "
+                    f"[{void_xmin},{void_xmax}] × [{void_ymin},{void_ymax}]"
+                ),
+            )
 
 
 if __name__ == "__main__":
