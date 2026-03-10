@@ -4,27 +4,36 @@ Visual inspection test: Randomized Individuum
 Shows a randomly generated building mass individuum on a 20 × 20 m, 6-floor
 building with 2 vertical subtractors and 2 horizontal subtractors.
 
-Two visualizations are produced:
+Two outputs are produced:
 
   Matplotlib (non-blocking) — Architectural floor plan grid showing one
     section-cut plan per floor with column grid, hatch, cores, scale bar.
     Saved as 'individuum_floors.png' alongside this script.
 
-  OCC 3D viewer (blocking) — Interactive isometric 3D view with:
-    - Original building mass (maximal volume)  → faint grey
-    - Subtracted building mass                 → transparent white + cyan wires
-    - Raw subtractor boxes (pre-alignment)     → red wireframe
-    - Aligned subtractor boxes (post-grid)     → orange wireframe
-    - Building core boxes (full height)        → blue semi-transparent
+  OCC 3D viewer — Isometric 3D view controlled by --mode:
+    diagnostic    (default) Semi-transparent white + cyan wires + subtractor
+                  boxes (red raw / orange aligned) + blue core boxes.
+                  Original maximal volume shown as a faint grey ghost.
+    architectural White opaque plaster mass + ground plane + directional
+                  light + ray-traced shadows.
+
+  Rendering mode:
+    (default)     Interactive OCC/Tkinter viewer (blocking).
+                  Add --save to also export a PNG without closing the viewer.
+    --headless    No window is opened.  A PNG is written using an offscreen
+                  OpenGL context.  If the offscreen context fails, a Xvfb
+                  fallback command is printed.
 
 Run manually (not collected by pytest):
     conda run -n pyoccEnv python test/userInteraction/test_individuum.py
-
-To reproduce the same individuum, set SEED to a fixed integer.
+    conda run -n pyoccEnv python test/userInteraction/test_individuum.py --seed 42
+    conda run -n pyoccEnv python test/userInteraction/test_individuum.py --mode architectural
+    conda run -n pyoccEnv python test/userInteraction/test_individuum.py --headless --save /tmp/out.png
 """
 import sys
 import os
 import random
+import argparse
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(_HERE, "..", "..", "src"))
@@ -34,28 +43,57 @@ from models.subtractor import SubtractorType
 from models.column_grid import ColumnGrid
 from models.span_mode import SpanMode
 from visualization import draw_floor_plan_grid
-
-from OCC.Core.BRepPrimAPI import BRepPrimAPI_MakeBox
-from OCC.Core.gp import gp_Pnt
-from OCC.Core.AIS import AIS_Shape
-from OCC.Core.Aspect import Aspect_TOL_DOT, Aspect_TOL_SOLID
-from OCC.Core.Prs3d import Prs3d_LineAspect, Prs3d_ShadingAspect
-from OCC.Core.Quantity import (
-    Quantity_Color,
-    Quantity_TOC_RGB,
-    Quantity_NOC_WHITE,
-    Quantity_NOC_RED,
-    Quantity_NOC_GRAY60,
-    Quantity_NOC_CYAN1,
+from visualization.occ_scene import (
+    add_building_mass,
+    add_original_mass,
+    add_subtractors,
+    add_cores,
+    add_ground_plane,
+    add_directional_light,
+    configure_diagnostic_background,
+    configure_architectural_background,
+    configure_isometric_view,
+    configure_ray_tracing,
+    export_png,
+    render_png,
 )
-from OCC.Display.SimpleGui import init_display
+
+
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
+
+parser = argparse.ArgumentParser(
+    description="Render a random Individuum: floor plan grid + OCC 3D view."
+)
+parser.add_argument(
+    "--seed", type=int, default=None,
+    help="Integer seed for reproducible result (default: random).",
+)
+parser.add_argument(
+    "--mode", choices=["diagnostic", "architectural"], default="diagnostic",
+    help="3D render style (default: diagnostic).",
+)
+parser.add_argument(
+    "--headless", action="store_true",
+    help="Render 3D PNG headlessly (no OCC viewer window).",
+)
+parser.add_argument(
+    "--save", default=None, metavar="PATH",
+    help="Export OCC view to PNG at this path (interactive mode only).",
+)
+args = parser.parse_args()
+
+STYLE = args.mode.upper()
+
+# Default PNG path when --headless is used without --save
+if args.headless and args.save is None:
+    args.save = os.path.join(_HERE, "individuum_3d.png")
 
 
 # ---------------------------------------------------------------------------
 # Individuum definition
 # ---------------------------------------------------------------------------
-
-SEED = None   # set to an integer (e.g. 42) for a reproducible result
 
 params = IndividuumParams(
     polygon_points=[
@@ -80,7 +118,7 @@ params = IndividuumParams(
     max_face_distance=35.0,
 )
 
-rng = random.Random(SEED)
+rng = random.Random(args.seed)
 individuum = Individuum.create_random(params, rng=rng)
 
 print("=" * 60)
@@ -101,7 +139,7 @@ for k in range(params.n_vertical + params.n_horizontal):
           f"z_bot={g[4]:.3f} z_top={g[5]:.3f}")
 print()
 
-# Collect raw subtractors before alignment (for visualization)
+# Collect raw subtractors before alignment (for diagnostic visualization)
 raw_subtractors = []
 for k in range(params.n_vertical):
     raw_subtractors.append(individuum._decode_subtractor(k, SubtractorType.VERTICAL))
@@ -166,140 +204,45 @@ plt.pause(0.2)
 
 
 # ---------------------------------------------------------------------------
-# Figure 2 — OCC 3D interactive viewer (blocking)
+# Figure 2 — OCC 3D view
 # ---------------------------------------------------------------------------
 
-display, start_display, add_menu, add_function_to_menu = init_display()
+if args.headless:
+    # ── Headless: offscreen PNG, no window ───────────────────────────────────
+    print(f"Rendering headless ({STYLE}) → {args.save}")
+    render_png(
+        subtracted_mass,
+        args.save,
+        style=STYLE,
+        headless=True,
+        config=config if STYLE == "DIAGNOSTIC" else None,
+        raw_subtractors=raw_subtractors if STYLE == "DIAGNOSTIC" else None,
+    )
 
-dark_bg = [8, 8, 25]
-display.set_bg_gradient_color(dark_bg, dark_bg)
+else:
+    # ── Interactive: open OCC viewer, optionally export PNG ──────────────────
+    from OCC.Display.SimpleGui import init_display
 
-context = display.Context
+    display, start_display, add_menu, add_function_to_menu = init_display()
+    context = display.Context
 
-white  = Quantity_Color(Quantity_NOC_WHITE)
-red    = Quantity_Color(Quantity_NOC_RED)
-gray   = Quantity_Color(Quantity_NOC_GRAY60)
-cyan   = Quantity_Color(0.2, 0.9, 0.9, Quantity_TOC_RGB)
-orange = Quantity_Color(1.0, 0.55, 0.1, Quantity_TOC_RGB)
-blue   = Quantity_Color(0.15, 0.45, 1.0, Quantity_TOC_RGB)
+    if STYLE == "ARCHITECTURAL":
+        configure_architectural_background(display)
+        add_building_mass(context, subtracted_mass, style="ARCHITECTURAL")
+        add_ground_plane(context, subtracted_mass, style="ARCHITECTURAL")
+        add_directional_light(display)
+        configure_ray_tracing(display)
+    else:  # DIAGNOSTIC
+        configure_diagnostic_background(display)
+        add_original_mass(context, original_mass)
+        add_building_mass(context, subtracted_mass, style="DIAGNOSTIC")
+        add_subtractors(context, config, raw=raw_subtractors)
+        add_cores(context, subtracted_mass)
 
+    configure_isometric_view(display)
 
-# --- Original mass: very faint grey silhouette ---
-for floor in original_mass.floors:
-    ais = AIS_Shape(floor.solid)
-    drawer = ais.Attributes()
+    if args.save:
+        export_png(display, args.save)
+        print(f"Saving on first frame: {args.save}")
 
-    shading = Prs3d_ShadingAspect()
-    shading.SetColor(gray)
-    shading.SetTransparency(0.97)
-    drawer.SetShadingAspect(shading)
-
-    ghost_line = Prs3d_LineAspect(gray, Aspect_TOL_DOT, 0.5)
-    drawer.SetWireAspect(ghost_line)
-    drawer.SetFaceBoundaryAspect(ghost_line)
-    drawer.SetFaceBoundaryDraw(True)
-
-    context.Display(ais, False)
-    context.SetDisplayMode(ais, 1, False)
-
-
-# --- Subtracted mass: transparent white solids + cyan floor wires ---
-for floor in subtracted_mass.floors:
-    ais = AIS_Shape(floor.solid)
-    drawer = ais.Attributes()
-
-    shading = Prs3d_ShadingAspect()
-    shading.SetColor(white)
-    shading.SetTransparency(0.82)
-    drawer.SetShadingAspect(shading)
-
-    dot_line = Prs3d_LineAspect(white, Aspect_TOL_DOT, 1.2)
-    drawer.SetWireAspect(dot_line)
-    drawer.SetFaceBoundaryAspect(dot_line)
-    drawer.SetFaceBoundaryDraw(True)
-
-    context.Display(ais, False)
-    context.SetDisplayMode(ais, 1, False)
-
-    ais_wire = AIS_Shape(floor.polygon_wire)
-    wire_drawer = ais_wire.Attributes()
-    wire_line = Prs3d_LineAspect(cyan, Aspect_TOL_SOLID, 2.0)
-    wire_drawer.SetWireAspect(wire_line)
-    context.Display(ais_wire, False)
-
-
-# --- Raw subtractor boxes: red wireframe ---
-for sub in raw_subtractors:
-    box_shape = BRepPrimAPI_MakeBox(
-        gp_Pnt(sub.x,             sub.y,             sub.z_bottom),
-        gp_Pnt(sub.x + sub.width, sub.y + sub.depth, sub.z_top),
-    ).Shape()
-
-    ais_box = AIS_Shape(box_shape)
-    box_drawer = ais_box.Attributes()
-
-    box_shading = Prs3d_ShadingAspect()
-    box_shading.SetColor(red)
-    box_shading.SetTransparency(1.0)
-    box_drawer.SetShadingAspect(box_shading)
-
-    red_edge = Prs3d_LineAspect(red, Aspect_TOL_SOLID, 1.0)
-    box_drawer.SetWireAspect(red_edge)
-    box_drawer.SetFaceBoundaryAspect(red_edge)
-    box_drawer.SetFaceBoundaryDraw(True)
-
-    context.Display(ais_box, False)
-    context.SetDisplayMode(ais_box, 1, False)
-
-
-# --- Aligned subtractor boxes: orange wireframe ---
-for sub in all_aligned:
-    box_shape = BRepPrimAPI_MakeBox(
-        gp_Pnt(sub.x,             sub.y,             sub.z_bottom),
-        gp_Pnt(sub.x + sub.width, sub.y + sub.depth, sub.z_top),
-    ).Shape()
-
-    ais_box = AIS_Shape(box_shape)
-    box_drawer = ais_box.Attributes()
-
-    box_shading = Prs3d_ShadingAspect()
-    box_shading.SetColor(orange)
-    box_shading.SetTransparency(1.0)
-    box_drawer.SetShadingAspect(box_shading)
-
-    orange_edge = Prs3d_LineAspect(orange, Aspect_TOL_SOLID, 2.0)
-    box_drawer.SetWireAspect(orange_edge)
-    box_drawer.SetFaceBoundaryAspect(orange_edge)
-    box_drawer.SetFaceBoundaryDraw(True)
-
-    context.Display(ais_box, False)
-    context.SetDisplayMode(ais_box, 1, False)
-
-
-# --- Core boxes: solid blue, semi-transparent, full building height ---
-total_height = subtracted_mass.total_height
-for core in subtracted_mass.cores:
-    box_shape = BRepPrimAPI_MakeBox(
-        gp_Pnt(core.x_min, core.y_min, 0.0),
-        gp_Pnt(core.x_max, core.y_max, total_height),
-    ).Shape()
-
-    ais_core = AIS_Shape(box_shape)
-    core_drawer = ais_core.Attributes()
-
-    core_shading = Prs3d_ShadingAspect()
-    core_shading.SetColor(blue)
-    core_shading.SetTransparency(0.55)
-    core_drawer.SetShadingAspect(core_shading)
-
-    blue_edge = Prs3d_LineAspect(blue, Aspect_TOL_SOLID, 2.0)
-    core_drawer.SetWireAspect(blue_edge)
-    core_drawer.SetFaceBoundaryAspect(blue_edge)
-    core_drawer.SetFaceBoundaryDraw(True)
-
-    context.Display(ais_core, False)
-    context.SetDisplayMode(ais_core, 1, False)
-
-
-display.FitAll()
-start_display()
+    start_display()

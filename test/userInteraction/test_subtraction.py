@@ -9,7 +9,7 @@ Shows a 10x10 m, 5-floor building with three subtractors applied:
 Display legend:
   - Original building mass    → very faint grey (background reference)
   - Subtracted building mass  → transparent white solid + cyan floor wires
-  - Subtractor boxes          → red wireframe
+  - Subtractor boxes          → red wireframe (raw / no column-grid alignment)
 
 Run manually (not collected by pytest):
     conda run -n pyoccEnv python test/userInteraction/test_subtraction.py
@@ -23,19 +23,15 @@ from models import BuildingMass
 from models.subtractor import Subtractor, SubtractorType, SubtractionConfig
 from models.subtraction_engine import apply_subtractions
 
-from OCC.Core.BRepPrimAPI import BRepPrimAPI_MakeBox
-from OCC.Core.gp import gp_Pnt
-from OCC.Core.AIS import AIS_Shape
-from OCC.Core.Aspect import Aspect_TOL_DOT, Aspect_TOL_SOLID
-from OCC.Core.Prs3d import Prs3d_LineAspect, Prs3d_ShadingAspect
-from OCC.Core.Quantity import (
-    Quantity_Color,
-    Quantity_TOC_RGB,
-    Quantity_NOC_WHITE,
-    Quantity_NOC_RED,
-    Quantity_NOC_GRAY60,
-)
 from OCC.Display.SimpleGui import init_display
+from visualization.occ_scene import (
+    add_building_mass,
+    add_original_mass,
+    add_subtractors,
+    configure_diagnostic_background,
+    configure_isometric_view,
+    export_png,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -110,86 +106,15 @@ print(f"Active subtractors: courtyard + corner_notch + stilts")
 
 display, start_display, add_menu, add_function_to_menu = init_display()
 
-dark_bg = [8, 8, 25]
-display.set_bg_gradient_color(dark_bg, dark_bg)
+configure_diagnostic_background(display)
 
 context = display.Context
 
-white  = Quantity_Color(Quantity_NOC_WHITE)
-red    = Quantity_Color(Quantity_NOC_RED)
-gray   = Quantity_Color(Quantity_NOC_GRAY60)
-cyan   = Quantity_Color(0.2, 0.9, 0.9, Quantity_TOC_RGB)
-orange = Quantity_Color(1.0, 0.55, 0.1, Quantity_TOC_RGB)
+add_original_mass(context, original_mass)
+add_building_mass(context, subtracted_mass, style="DIAGNOSTIC")
+# Show subtractors in red wireframe (no column-grid alignment in this test)
+raw_all = config.vertical_subtractors + config.horizontal_subtractors
+add_subtractors(context, config=None, raw=raw_all)
 
-
-# --- Original mass: very faint grey silhouette ---
-for floor in original_mass.floors:
-    ais = AIS_Shape(floor.solid)
-    drawer = ais.Attributes()
-
-    shading = Prs3d_ShadingAspect()
-    shading.SetColor(gray)
-    shading.SetTransparency(0.97)
-    drawer.SetShadingAspect(shading)
-
-    ghost_line = Prs3d_LineAspect(gray, Aspect_TOL_DOT, 0.5)
-    drawer.SetWireAspect(ghost_line)
-    drawer.SetFaceBoundaryAspect(ghost_line)
-    drawer.SetFaceBoundaryDraw(True)
-
-    context.Display(ais, False)
-    context.SetDisplayMode(ais, 1, False)
-
-
-# --- Subtracted mass: transparent white solids + cyan floor wires ---
-for floor in subtracted_mass.floors:
-    ais = AIS_Shape(floor.solid)
-    drawer = ais.Attributes()
-
-    shading = Prs3d_ShadingAspect()
-    shading.SetColor(white)
-    shading.SetTransparency(0.82)
-    drawer.SetShadingAspect(shading)
-
-    dot_line = Prs3d_LineAspect(white, Aspect_TOL_DOT, 1.2)
-    drawer.SetWireAspect(dot_line)
-    drawer.SetFaceBoundaryAspect(dot_line)
-    drawer.SetFaceBoundaryDraw(True)
-
-    context.Display(ais, False)
-    context.SetDisplayMode(ais, 1, False)
-
-    ais_wire = AIS_Shape(floor.polygon_wire)
-    wire_drawer = ais_wire.Attributes()
-    wire_line = Prs3d_LineAspect(cyan, Aspect_TOL_SOLID, 2.0)
-    wire_drawer.SetWireAspect(wire_line)
-    context.Display(ais_wire, False)
-
-
-# --- Subtractor boxes: red wireframe ---
-all_subtractors = config.vertical_subtractors + config.horizontal_subtractors
-for sub in all_subtractors:
-    box_shape = BRepPrimAPI_MakeBox(
-        gp_Pnt(sub.x,             sub.y,             sub.z_bottom),
-        gp_Pnt(sub.x + sub.width, sub.y + sub.depth, sub.z_top),
-    ).Shape()
-
-    ais_box = AIS_Shape(box_shape)
-    box_drawer = ais_box.Attributes()
-
-    box_shading = Prs3d_ShadingAspect()
-    box_shading.SetColor(red)
-    box_shading.SetTransparency(1.0)
-    box_drawer.SetShadingAspect(box_shading)
-
-    red_edge = Prs3d_LineAspect(red, Aspect_TOL_SOLID, 1.5)
-    box_drawer.SetWireAspect(red_edge)
-    box_drawer.SetFaceBoundaryAspect(red_edge)
-    box_drawer.SetFaceBoundaryDraw(True)
-
-    context.Display(ais_box, False)
-    context.SetDisplayMode(ais_box, 1, False)
-
-
-display.FitAll()
+configure_isometric_view(display)
 start_display()

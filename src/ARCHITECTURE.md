@@ -57,10 +57,11 @@ MassCreator/
 │   │   ├── building_core.py      # BuildingCore dataclass (center, footprint, column indices)
 │   │   └── building_core_engine.py  # find_building_cores() — centroid-first placement + grid snap
 │   └── visualization/
-│       ├── __init__.py           # Re-exports draw_floor_plan, draw_floor_plan_grid, DEFAULT_PALETTE
+│       ├── __init__.py           # Re-exports all public symbols from palette, floor_plan, occ_scene
 │       ├── palette.py            # DEFAULT_PALETTE color tokens + merge_palette()
 │       ├── scale_bar.py          # draw_scale_bar(), draw_north_arrow() — data-space annotations
-│       └── floor_plan.py         # draw_floor_plan(), draw_floor_plan_grid() — architectural plans
+│       ├── floor_plan.py         # draw_floor_plan(), draw_floor_plan_grid() — architectural plans
+│       └── occ_scene.py          # Modular OCC 3D display helpers (add_*, configure_*, export_png, render_png)
 ├── test/                         # mirrors src/ layout (see Testing Strategy)
 │   ├── models/
 │   │   ├── test_building_grid.py  # unit tests for src/models/building_grid.py
@@ -87,7 +88,8 @@ MassCreator/
     │   │   └── IndividuumGeneration.md       # Feature spec: EA genome + build pipeline
     │   └── Visualization/
     │       ├── IsometricAndFloorPlots.md             # Spec: matplotlib isometric + basic floor grid
-    │       └── ArchitecturalFloorPlanVisualization.md # Spec: architectural plan rendering
+    │       ├── ArchitecturalFloorPlanVisualization.md # Spec: architectural plan rendering
+    │       └── OCC3DVisualization.md                  # Spec: modular OCC 3D display + ray-tracing + headless PNG
     └── paper/
 ```
 
@@ -185,14 +187,36 @@ Domain model layer. All classes are Python `@dataclass`s. **No display code.**
 | `find_building_cores` | `building_core_engine.py` | Places cores so every ground-floor face is ≤ max_face_distance from a core; snaps to column-grid cell centers; validates candidate footprint (center + 4 corners) against every floor solid so cores are never placed inside voids on any floor |
 
 ### `src/visualization/`
-Display layer. All matplotlib code lives here; `src/models/` imports nothing from this package.
+Display layer. All matplotlib and OCC display code lives here; `src/models/` imports nothing from this package.
 
 | Module | Role |
 |---|---|
 | `palette.py` | `DEFAULT_PALETTE` color token dict + `merge_palette(overrides)` |
 | `scale_bar.py` | `draw_scale_bar(ax, anchor, palette)` + `draw_north_arrow(ax, anchor, palette)` — data-space annotations |
 | `floor_plan.py` | `draw_floor_plan(ax, floor, *, column_grid, ...)` — single-floor architectural section-cut plan; `draw_floor_plan_grid(floors, ...)` — multi-floor composition |
-| `__init__.py` | Re-exports `draw_floor_plan`, `draw_floor_plan_grid`, `DEFAULT_PALETTE`, `merge_palette` |
+| `occ_scene.py` | Modular OCC 3D display helpers: `add_building_mass`, `add_original_mass`, `add_subtractors`, `add_cores`, `add_ground_plane`, `add_directional_light`, `configure_diagnostic_background`, `configure_architectural_background`, `configure_isometric_view`, `configure_ray_tracing`, `export_png`, `render_png` |
+| `__init__.py` | Re-exports all public symbols from `palette`, `floor_plan`, and `occ_scene` |
+
+#### OCC scene visual styles
+
+| Style | Background | Material | Transparency | Extras |
+|---|---|---|---|---|
+| `DIAGNOSTIC` | Dark navy `[8,8,25]` | Phong, per-element colour | 0.82 (floors), 0.97 (ghost), 0.55 (cores) | Cyan floor wires, red/orange subtractor boxes |
+| `ARCHITECTURAL` | Light grey → white | `Graphic3d_NOM_PLASTER`, white | 0 (fully opaque) | Ground plane, directional light, ray-tracing |
+
+#### OCC scene standard elements
+
+| Function | Renders | Style support |
+|---|---|---|
+| `add_building_mass` | Floor solids + polygon wires | DIAGNOSTIC + ARCHITECTURAL |
+| `add_original_mass` | Original (uncut) floors as ghost | DIAGNOSTIC only |
+| `add_subtractors` | Red (raw) + orange (aligned) wireframe boxes | DIAGNOSTIC only |
+| `add_cores` | Blue semi-transparent boxes, full height | DIAGNOSTIC only |
+| `add_ground_plane` | Flat slab at z=0, building footprint + padding | DIAGNOSTIC + ARCHITECTURAL |
+| `configure_isometric_view` | Camera: eye from (1,1,1), Z-up, FitAll | Both |
+| `configure_ray_tracing` | `Graphic3d_RM_RAYTRACING`, shadows, AO | ARCHITECTURAL |
+| `export_png` | Tk `after` callback → `V3d_View.Dump` | Interactive (SimpleGui) |
+| `render_png` | Full setup → PNG, interactive or headless | Both |
 
 #### Architectural plan drawing layers (Z-order)
 

@@ -24,15 +24,16 @@ from models.building_core_engine import find_building_cores, _extract_face_midpo
 from OCC.Core.BRepPrimAPI import BRepPrimAPI_MakeBox
 from OCC.Core.gp import gp_Pnt
 from OCC.Core.AIS import AIS_Shape
-from OCC.Core.Aspect import Aspect_TOL_DOT, Aspect_TOL_SOLID
-from OCC.Core.Prs3d import Prs3d_LineAspect, Prs3d_ShadingAspect
-from OCC.Core.Quantity import (
-    Quantity_Color,
-    Quantity_TOC_RGB,
-    Quantity_NOC_WHITE,
-    Quantity_NOC_CYAN1,
-)
+from OCC.Core.Prs3d import Prs3d_ShadingAspect
+from OCC.Core.Quantity import Quantity_Color, Quantity_TOC_RGB
 from OCC.Display.SimpleGui import init_display
+
+from visualization.occ_scene import (
+    add_building_mass,
+    add_cores,
+    configure_diagnostic_background,
+    configure_isometric_view,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -104,67 +105,15 @@ print("=" * 60)
 
 display, start_display, add_menu, add_function_to_menu = init_display()
 
-dark_bg = [8, 8, 25]
-display.set_bg_gradient_color(dark_bg, dark_bg)
+configure_diagnostic_background(display)
 
 context = display.Context
 
-white  = Quantity_Color(Quantity_NOC_WHITE)
-cyan   = Quantity_Color(Quantity_NOC_CYAN1)
-blue   = Quantity_Color(0.15, 0.45, 1.0, Quantity_TOC_RGB)
-green  = Quantity_Color(0.2, 0.9, 0.3, Quantity_TOC_RGB)
+add_building_mass(context, subtracted_mass, style="DIAGNOSTIC")
+add_cores(context, subtracted_mass)
 
-
-# --- Subtracted mass: transparent white solids + cyan floor wires ---
-for floor in subtracted_mass.floors:
-    ais = AIS_Shape(floor.solid)
-    drawer = ais.Attributes()
-
-    shading = Prs3d_ShadingAspect()
-    shading.SetColor(white)
-    shading.SetTransparency(0.82)
-    drawer.SetShadingAspect(shading)
-
-    dot_line = Prs3d_LineAspect(white, Aspect_TOL_DOT, 1.2)
-    drawer.SetWireAspect(dot_line)
-    drawer.SetFaceBoundaryAspect(dot_line)
-    drawer.SetFaceBoundaryDraw(True)
-
-    context.Display(ais, False)
-    context.SetDisplayMode(ais, 1, False)
-
-    ais_wire = AIS_Shape(floor.polygon_wire)
-    wire_drawer = ais_wire.Attributes()
-    wire_line = Prs3d_LineAspect(cyan, Aspect_TOL_SOLID, 2.0)
-    wire_drawer.SetWireAspect(wire_line)
-    context.Display(ais_wire, False)
-
-
-# --- Core boxes: solid blue, semi-transparent, full building height ---
-for core in cores:
-    box_shape = BRepPrimAPI_MakeBox(
-        gp_Pnt(core.x_min, core.y_min, 0.0),
-        gp_Pnt(core.x_max, core.y_max, total_height),
-    ).Shape()
-
-    ais_core = AIS_Shape(box_shape)
-    core_drawer = ais_core.Attributes()
-
-    core_shading = Prs3d_ShadingAspect()
-    core_shading.SetColor(blue)
-    core_shading.SetTransparency(0.55)
-    core_drawer.SetShadingAspect(core_shading)
-
-    blue_edge = Prs3d_LineAspect(blue, Aspect_TOL_SOLID, 2.0)
-    core_drawer.SetWireAspect(blue_edge)
-    core_drawer.SetFaceBoundaryAspect(blue_edge)
-    core_drawer.SetFaceBoundaryDraw(True)
-
-    context.Display(ais_core, False)
-    context.SetDisplayMode(ais_core, 1, False)
-
-
-# --- Face-midpoint markers: small green boxes at z=0 ---
+# --- Face-midpoint markers: small green boxes at z=0 (unique to this test) ---
+green = Quantity_Color(0.2, 0.9, 0.3, Quantity_TOC_RGB)
 MARKER_SIZE = 0.4
 for mp in face_midpoints:
     marker = BRepPrimAPI_MakeBox(
@@ -184,5 +133,5 @@ for mp in face_midpoints:
     context.SetDisplayMode(ais_mp, 1, False)
 
 
-display.FitAll()
+configure_isometric_view(display)
 start_display()
