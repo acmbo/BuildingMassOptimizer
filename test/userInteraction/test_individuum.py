@@ -4,12 +4,18 @@ Visual inspection test: Randomized Individuum
 Shows a randomly generated building mass individuum on a 20 × 20 m, 6-floor
 building with 2 vertical subtractors and 2 horizontal subtractors.
 
-Display legend:
-  - Original building mass (maximal volume)  → faint grey
-  - Subtracted building mass                 → transparent white + cyan floor wires
-  - Raw subtractor boxes (pre-alignment)     → red wireframe
-  - Aligned subtractor boxes (post-grid)     → orange wireframe
-  - Building core boxes (full height)        → blue semi-transparent
+Two visualizations are produced:
+
+  Matplotlib (non-blocking) — Architectural floor plan grid showing one
+    section-cut plan per floor with column grid, hatch, cores, scale bar.
+    Saved as 'individuum_floors.png' alongside this script.
+
+  OCC 3D viewer (blocking) — Interactive isometric 3D view with:
+    - Original building mass (maximal volume)  → faint grey
+    - Subtracted building mass                 → transparent white + cyan wires
+    - Raw subtractor boxes (pre-alignment)     → red wireframe
+    - Aligned subtractor boxes (post-grid)     → orange wireframe
+    - Building core boxes (full height)        → blue semi-transparent
 
 Run manually (not collected by pytest):
     conda run -n pyoccEnv python test/userInteraction/test_individuum.py
@@ -20,10 +26,14 @@ import sys
 import os
 import random
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
+_HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(_HERE, "..", "..", "src"))
 
 from models.individuum import IndividuumParams, Individuum, GENES_PER_SUBTRACTOR
 from models.subtractor import SubtractorType
+from models.column_grid import ColumnGrid
+from models.span_mode import SpanMode
+from visualization import draw_floor_plan_grid
 
 from OCC.Core.BRepPrimAPI import BRepPrimAPI_MakeBox
 from OCC.Core.gp import gp_Pnt
@@ -117,7 +127,46 @@ print("=" * 60)
 
 
 # ---------------------------------------------------------------------------
-# Visualize
+# Figure 1 — Architectural floor plan grid (matplotlib, non-blocking)
+# ---------------------------------------------------------------------------
+
+import matplotlib.pyplot as plt
+
+col_grid = ColumnGrid.create(
+    subtracted_mass,
+    SpanMode.FIXED_SPAN,
+    span_x=params.span_x,
+    span_y=params.span_y,
+)
+orig_footprint = [(p[0], p[1]) for p in params.polygon_points]
+
+floors_png = os.path.join(_HERE, "individuum_floors.png")
+fig_floors = draw_floor_plan_grid(
+    subtracted_mass.floors,
+    column_grid=col_grid,
+    original_footprint=orig_footprint,
+    n_cols=3,
+    subplot_size=4.5,
+    title=(
+        f"Architectural Floor Plans   "
+        f"({len(config.vertical_subtractors)}V + "
+        f"{len(config.horizontal_subtractors)}H subtractors, "
+        f"{len(subtracted_mass.cores)} cores)"
+    ),
+    show_column_labels=True,
+    show_scale_bar=True,
+    show_north_arrow=True,
+    save_path=floors_png,
+)
+print(f"Saved: {floors_png}")
+
+# Show non-blocking so the OCC viewer can open immediately after
+plt.show(block=False)
+plt.pause(0.2)
+
+
+# ---------------------------------------------------------------------------
+# Figure 2 — OCC 3D interactive viewer (blocking)
 # ---------------------------------------------------------------------------
 
 display, start_display, add_menu, add_function_to_menu = init_display()

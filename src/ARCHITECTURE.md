@@ -41,20 +41,26 @@ MassCreator/
 ├── src/
 │   ├── floorgeneration.py        # Low-level OCC geometry primitives
 │   ├── ARCHITECTURE.md           # This file
-│   └── models/
-│       ├── __init__.py           # Re-exports all public model classes
-│       ├── floor_data.py         # FloorData dataclass
-│       ├── building_mass.py      # BuildingMass dataclass + factory
-│       ├── cell_mode.py          # CellMode enum
-│       ├── grid_cell.py          # GridCell dataclass
-│       ├── building_grid.py      # BuildingGrid dataclass + factory
-│       ├── subtractor.py         # Subtractor, SubtractorType, SubtractionConfig
-│       ├── subtraction_engine.py # apply_subtractions(), extract_bottom_wire()
-│       ├── span_mode.py          # SpanMode enum
-│       ├── column_grid.py        # ColumnGrid dataclass + factory
-│       ├── individuum.py         # IndividuumParams, Individuum (EA genome + build pipeline)
-│       ├── building_core.py      # BuildingCore dataclass (center, footprint, column indices)
-│       └── building_core_engine.py  # find_building_cores() — centroid-first placement + grid snap
+│   ├── models/
+│   │   ├── __init__.py           # Re-exports all public model classes
+│   │   ├── floor_data.py         # FloorData dataclass
+│   │   ├── building_mass.py      # BuildingMass dataclass + factory
+│   │   ├── cell_mode.py          # CellMode enum
+│   │   ├── grid_cell.py          # GridCell dataclass
+│   │   ├── building_grid.py      # BuildingGrid dataclass + factory
+│   │   ├── subtractor.py         # Subtractor, SubtractorType, SubtractionConfig
+│   │   ├── subtraction_engine.py # apply_subtractions(), extract_bottom_wire()
+│   │   ├── span_mode.py          # SpanMode enum
+│   │   ├── column_grid.py        # ColumnGrid dataclass + factory
+│   │   ├── wire_utils.py         # extract_wire_loops() — OCC wire → Python point lists
+│   │   ├── individuum.py         # IndividuumParams, Individuum (EA genome + build pipeline)
+│   │   ├── building_core.py      # BuildingCore dataclass (center, footprint, column indices)
+│   │   └── building_core_engine.py  # find_building_cores() — centroid-first placement + grid snap
+│   └── visualization/
+│       ├── __init__.py           # Re-exports draw_floor_plan, draw_floor_plan_grid, DEFAULT_PALETTE
+│       ├── palette.py            # DEFAULT_PALETTE color tokens + merge_palette()
+│       ├── scale_bar.py          # draw_scale_bar(), draw_north_arrow() — data-space annotations
+│       └── floor_plan.py         # draw_floor_plan(), draw_floor_plan_grid() — architectural plans
 ├── test/                         # mirrors src/ layout (see Testing Strategy)
 │   ├── models/
 │   │   ├── test_building_grid.py  # unit tests for src/models/building_grid.py
@@ -66,14 +72,22 @@ MassCreator/
 │       ├── test_buildinggrid.py     # visualisation: building mass + grid
 │       ├── test_subtraction.py      # visualisation: original vs subtracted mass
 │       ├── test_column_grid.py      # visualisation: polygon footprint + column grid lines
-│       ├── test_individuum.py       # visualisation: random EA individuum (genome → geometry)
+│       ├── test_individuum.py       # visualisation: floor plan grid (matplotlib) + 3D OCC viewer
+│       ├── test_individuum_viz.py   # visualisation: isometric 3D + architectural floor plan grid
 │       └── test_building_core.py   # visualisation: footprint + core boxes + face-midpoint markers
 └── doc/
     ├── requirements/
-    │   ├── BuildingMassgeneration.md     # Feature spec: mass generation
-    │   ├── BuildingGrid.md               # Feature spec: 3D voxel grid
-    │   ├── SubtractiveFormGeneration.md  # Feature spec (Wang et al. 2019)
-    │   └── ColumnGrid.md                 # Feature spec: 2D structural column grid
+    │   ├── Models/
+    │   │   ├── BuildingMassgeneration.md     # Feature spec: mass generation
+    │   │   ├── BuildingGrid.md               # Feature spec: 3D voxel grid
+    │   │   ├── SubtractiveFormGeneration.md  # Feature spec (Wang et al. 2019)
+    │   │   ├── ColumnGrid.md                 # Feature spec: 2D structural column grid
+    │   │   └── BuildingCore.md               # Feature spec: service core placement
+    │   ├── Algorithm/
+    │   │   └── IndividuumGeneration.md       # Feature spec: EA genome + build pipeline
+    │   └── Visualization/
+    │       ├── IsometricAndFloorPlots.md             # Spec: matplotlib isometric + basic floor grid
+    │       └── ArchitecturalFloorPlanVisualization.md # Spec: architectural plan rendering
     └── paper/
 ```
 
@@ -111,7 +125,7 @@ conda run -n pyoccEnv python -m pytest test/ -v
 ### Visualisation tests (`test/userInteraction/`)
 
 `test/userInteraction/` is a **special, non-automated folder**. Scripts here
-open an interactive 3D viewer and are run manually by the developer to
+open an interactive viewer and are run manually by the developer to
 visually inspect geometry and rendering. They are **not collected by pytest**.
 
 Each script in this folder corresponds to a feature or combination of features:
@@ -122,11 +136,15 @@ Each script in this folder corresponds to a feature or combination of features:
 | `test_buildinggrid.py` | Building mass + grid — adds red wireframe cell boxes |
 | `test_subtraction.py` | Original mass (faint grey) vs subtracted mass (white) + red subtractor boxes |
 | `test_column_grid.py` | Polygon footprint with column grid lines overlaid; before/after subtractor snapping |
+| `test_individuum.py` | Architectural floor plan grid (matplotlib, saved as PNG) + OCC 3D viewer with raw/aligned subtractor boxes and core boxes |
+| `test_individuum_viz.py` | Isometric 3D matplotlib rendering + architectural floor plan grid |
+| `test_building_core.py` | Footprint + core boxes + face-midpoint distance markers |
 
 Run a visualisation test directly:
 ```bash
 conda run -n pyoccEnv python test/userInteraction/test_buildinggrid.py
 conda run -n pyoccEnv python test/userInteraction/test_subtraction.py
+conda run -n pyoccEnv python test/userInteraction/test_individuum_viz.py --seed 42
 ```
 
 ---
@@ -144,7 +162,7 @@ Pure OCC geometry primitives — no display code, no domain logic.
 | `extrude_face(face, height)` | `TopoDS_Shape` (Solid) | Extrusion of a face along +Z |
 
 ### `src/models/`
-Domain model layer. All classes are Python `@dataclass`s. No display code.
+Domain model layer. All classes are Python `@dataclass`s. **No display code.**
 
 | Class / Module | File | Role |
 |---|---|---|
@@ -160,10 +178,39 @@ Domain model layer. All classes are Python `@dataclass`s. No display code.
 | `extract_bottom_wire` | `subtraction_engine.py` | Extracts plan outline wire(s) from the bottom face of a cut floor solid |
 | `SpanMode` | `span_mode.py` | Enum: `FIXED_SPAN` or `SPAN_COUNT` |
 | `ColumnGrid` | `column_grid.py` | 2D structural column grid fitted to polygon bbox; factory via `ColumnGrid.create(mass, mode, ...)`; exposes `snap_to_grid()` and `align_subtractor()` |
+| `extract_wire_loops` | `wire_utils.py` | Extracts ordered `(x, y, z)` vertex lists from a `TopoDS_Wire` or compound of wires; used by the visualization layer |
 | `IndividuumParams` | `individuum.py` | Fixed initialization parameters for one EA run (footprint, floors, subtractor counts, grid spans, constraints, core toggle) |
 | `Individuum` | `individuum.py` | EA genome (normalized [0,1] floats) + `create_random()` + `build()` → `(original_mass, subtracted_mass, config)` |
 | `BuildingCore` | `building_core.py` | Vertical service zone: center XY, footprint size, column-grid cell indices; derived edge properties |
 | `find_building_cores` | `building_core_engine.py` | Places cores so every ground-floor face is ≤ max_face_distance from a core; snaps to column-grid cell centers; validates candidate footprint (center + 4 corners) against every floor solid so cores are never placed inside voids on any floor |
+
+### `src/visualization/`
+Display layer. All matplotlib code lives here; `src/models/` imports nothing from this package.
+
+| Module | Role |
+|---|---|
+| `palette.py` | `DEFAULT_PALETTE` color token dict + `merge_palette(overrides)` |
+| `scale_bar.py` | `draw_scale_bar(ax, anchor, palette)` + `draw_north_arrow(ax, anchor, palette)` — data-space annotations |
+| `floor_plan.py` | `draw_floor_plan(ax, floor, *, column_grid, ...)` — single-floor architectural section-cut plan; `draw_floor_plan_grid(floors, ...)` — multi-floor composition |
+| `__init__.py` | Re-exports `draw_floor_plan`, `draw_floor_plan_grid`, `DEFAULT_PALETTE`, `merge_palette` |
+
+#### Architectural plan drawing layers (Z-order)
+
+| Z | Layer | Style |
+|---|---|---|
+| 2 | Original footprint reference | Dashed, `ORIG_FOOTPRINT` color, no fill |
+| 3 | Column grid lines | Dash-dot, 0.25 pt, `GRID_LINE` color |
+| 4 | Floor solid fill | `FLOOR_FILL` color, no edge |
+| 5 | Diagonal hatch | `////` pattern, 0.35 pt, `WALL_HATCH` color |
+| 6 | Void fills (courtyards) | `VOID_FILL` (white), no edge — covers hatch |
+| 7 | Core fills | `CORE_FILL` (light blue), no edge |
+| 8 | Column dots | Filled circles at grid intersections; 30 % alpha outside footprint |
+| 9 | Outer boundary (re-stroked) | 1.8 pt, `OUTER_EDGE` — heaviest line |
+| 10 | Void boundaries (re-stroked) | 1.0 pt, `VOID_EDGE` |
+| 11 | Core boundaries (re-stroked) | 1.2 pt, `CORE_EDGE` |
+| 12 | Column axis labels | Numeric (X) / alphabetic (Y), 6.5 pt, outside margin |
+| 13 | Scale bar | 5 m segmented bar, lower-left corner |
+| 14 | North arrow | ↑ N glyph, upper-right corner (first subplot only) |
 
 ---
 

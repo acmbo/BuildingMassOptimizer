@@ -1,5 +1,5 @@
 """
-Visual inspection: Individuum — Isometric view + Per-floor plan grid
+Visual inspection: Individuum — Isometric view + Architectural floor plan grid
 
 Two matplotlib figures are produced, both saved as PNG *and* shown
 interactively:
@@ -10,10 +10,15 @@ interactively:
              (disable with --no-original).
              Building cores are shown as semi-transparent blue boxes (full height).
 
-  Figure 2 — Grid of 2D floor plan polygons, one subplot per floor.
-             Interior voids (courtyards, atriums) are rendered as holes using
-             matplotlib.path.Path with reversed sub-path winding.
-             Building core footprints are overlaid as solid blue rectangles.
+  Figure 2 — Architectural floor plan grid, one subplot per floor.
+             Rendered as section-cut plans with:
+               • Line-weight hierarchy (heavy outer edge, medium voids/cores,
+                 light column grid)
+               • 45° diagonal hatch over solid floor material
+               • White void fills for courtyards / subtracted areas
+               • Column grid lines (dash-dot) + column dots at intersections
+               • Service core footprints in light blue
+               • Scale bar and column grid axis labels
 
 PNGs are saved alongside this script unless --save-dir is specified.
 
@@ -41,6 +46,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 from models.individuum import IndividuumParams, Individuum, GENES_PER_SUBTRACTOR
 from models.subtractor import SubtractorType
 from models.wire_utils import extract_wire_loops
+from models.column_grid import ColumnGrid
+from models.span_mode import SpanMode
+from visualization import draw_floor_plan_grid
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -319,124 +327,38 @@ print(f"Saved: {iso_path}")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Figure 2 — Per-floor plan grid
+# Figure 2 — Architectural floor plan grid
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _make_floor_path(loops: list[list[tuple]]) -> Path:
-    """
-    Build a matplotlib Path for a floor polygon that may contain holes.
-
-    Each loop is a separate sub-path (MOVETO … LINETO … CLOSEPOLY).
-    Hole loops (index > 0) are reversed so their winding direction is
-    opposite to the outer boundary.  Combined with matplotlib's nonzero
-    winding rule this correctly punches voids through the fill.
-    """
-    verts: list = []
-    codes: list = []
-
-    for i, loop in enumerate(loops):
-        xy = [(p[0], p[1]) for p in loop]
-        if i > 0:
-            xy = list(reversed(xy))   # opposite winding → acts as hole
-
-        for j, pt in enumerate(xy):
-            verts.append(pt)
-            codes.append(Path.MOVETO if j == 0 else Path.LINETO)
-
-        verts.append(xy[0])
-        codes.append(Path.CLOSEPOLY)
-
-    return Path(np.array(verts, dtype=float), codes)
-
-
-num_floors = len(subtracted_mass.floors)
-n_cols = min(3, num_floors)
-n_rows = math.ceil(num_floors / n_cols)
-
-fig_floors, axes = plt.subplots(
-    n_rows, n_cols,
-    figsize=(4.5 * n_cols, 4.5 * n_rows),
-    squeeze=False,
-    facecolor="#ffffff",
-)
-fig_floors.suptitle(
-    f"Per-floor Plan Polygons   (seed={args.seed})",
-    fontsize=13, y=1.02,
+# Reconstruct the column grid from IndividuumParams (same parameters used
+# inside Individuum.build(), so the grid is identical to what was used for
+# subtractor alignment and core placement).
+col_grid = ColumnGrid.create(
+    subtracted_mass,
+    SpanMode.FIXED_SPAN,
+    span_x=params.span_x,
+    span_y=params.span_y,
 )
 
-# Shared axis limits with a small margin
-_MARGIN = 1.5
-_XLIM = (params.bbox_xmin - _MARGIN, params.bbox_xmax + _MARGIN)
-_YLIM = (params.bbox_ymin - _MARGIN, params.bbox_ymax + _MARGIN)
+orig_footprint = [(p[0], p[1]) for p in params.polygon_points]
 
-# Pre-build a Path for the original footprint (used as void background in every subplot)
-_orig_pts = [(p[0], p[1]) for p in params.polygon_points]
-_orig_path = Path(
-    np.array(_orig_pts + [_orig_pts[0]], dtype=float),
-    [Path.MOVETO] + [Path.LINETO] * (len(_orig_pts) - 1) + [Path.CLOSEPOLY],
-)
-
-for idx, floor in enumerate(subtracted_mass.floors):
-    row, col = divmod(idx, n_cols)
-    ax = axes[row][col]
-
-    ax.set_facecolor("#f0f4f8")
-    ax.set_aspect("equal")
-    ax.set_xlim(*_XLIM)
-    ax.set_ylim(*_YLIM)
-    ax.tick_params(labelsize=7)
-    ax.set_xlabel("X (m)", fontsize=7, labelpad=3)
-    ax.set_ylabel("Y (m)", fontsize=7, labelpad=3)
-
-    # Layer 1 — original footprint filled with "void" colour.
-    # This makes subtracted areas visually distinct: anything not covered by
-    # the solid floor patch below shows as void (pink/salmon).
-    ax.add_patch(PathPatch(
-        _orig_path,
-        facecolor="#f5d0cc",   # light salmon = void / subtracted material
-        edgecolor="#cc6655",
-        linewidth=1.0,
-        linestyle="--",
-        zorder=1,
-    ))
-
-    # Layer 2 — remaining solid floor area on top.
-    # Interior holes (courtyards) are punched through via reversed winding,
-    # letting the void colour show through.
-    loops = extract_wire_loops(floor.polygon_wire)
-    if loops:
-        patch = PathPatch(
-            _make_floor_path(loops),
-            facecolor="#b8d4f0",   # blue = solid floor material
-            edgecolor="#1e4080",
-            linewidth=1.2,
-            zorder=2,
-        )
-        ax.add_patch(patch)
-
-    # Layer 3 — core footprints (blue solid rectangles)
-    for core in floor.cores:
-        from matplotlib.patches import Rectangle
-        ax.add_patch(Rectangle(
-            (core.x_min, core.y_min),
-            core.width, core.depth,
-            facecolor="#3a7fd5", edgecolor="#1a3a80",
-            linewidth=1.2, alpha=0.70, zorder=3,
-        ))
-
-    ax.set_title(
-        f"Floor {floor.index}   z = {floor.elevation:.1f} m",
-        fontsize=9, pad=5,
-    )
-
-# Hide unused subplots
-for idx in range(num_floors, n_rows * n_cols):
-    row, col = divmod(idx, n_cols)
-    axes[row][col].set_visible(False)
-
-fig_floors.tight_layout()
 floors_path = os.path.join(args.save_dir, "individuum_floors.png")
-fig_floors.savefig(floors_path, dpi=150, bbox_inches="tight")
+
+fig_floors = draw_floor_plan_grid(
+    subtracted_mass.floors,
+    column_grid=col_grid,
+    original_footprint=orig_footprint,
+    n_cols=3,
+    subplot_size=4.5,
+    title=f"Architectural Floor Plans   (seed={args.seed}, "
+          f"{len(config.vertical_subtractors)}V + "
+          f"{len(config.horizontal_subtractors)}H subtractors, "
+          f"{len(subtracted_mass.cores)} cores)",
+    show_column_labels=True,
+    show_scale_bar=True,
+    show_north_arrow=True,
+    save_path=floors_path,
+)
 print(f"Saved: {floors_path}")
 
 
