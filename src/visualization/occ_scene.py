@@ -55,6 +55,7 @@ from OCC.Core.AIS import AIS_Shape
 from OCC.Core.Aspect import Aspect_TOL_DOT, Aspect_TOL_SOLID
 from OCC.Core.BRepPrimAPI import BRepPrimAPI_MakeBox
 from OCC.Core.gp import gp_Pnt, gp_Dir
+from OCC.Core.Graphic3d import Graphic3d_MaterialAspect, Graphic3d_NOM_PLASTER
 from OCC.Core.Prs3d import Prs3d_LineAspect, Prs3d_ShadingAspect
 from OCC.Core.Quantity import (
     Quantity_Color,
@@ -122,13 +123,22 @@ def _make_ais_wireframe(
 
 
 def _make_ais_plaster(shape, color: Quantity_Color) -> AIS_Shape:
-    """AIS_Shape with opaque white shading (architectural style). No edge lines."""
+    """AIS_Shape with opaque matte shading (architectural style). No edge lines.
+
+    Uses Graphic3d_NOM_MATTE to suppress all specular highlights so the only
+    visible shading is pure Lambert diffuse — this keeps shadow boundaries clean
+    and avoids bright hotspots washing out shadow contrast.
+    """
     ais = AIS_Shape(shape)
     drawer = ais.Attributes()
+
+    mat = Graphic3d_MaterialAspect(Graphic3d_NOM_PLASTER)
+    mat.SetColor(color)
 
     shading = Prs3d_ShadingAspect()
     shading.SetColor(color)
     shading.SetTransparency(0.0)
+    shading.SetMaterial(mat)
     drawer.SetShadingAspect(shading)
     drawer.SetFaceBoundaryDraw(False)
     return ais
@@ -303,7 +313,7 @@ def add_ground_plane(
         arch_white = Quantity_Color(1.0, 1.0, 1.0, Quantity_TOC_RGB)
         ais = _make_ais_plaster(ground_shape, arch_white)
     else:
-        light_gray = Quantity_Color(0.85, 0.85, 0.85, Quantity_TOC_RGB)
+        light_gray = Quantity_Color(0.95, 0.95, 0.95, Quantity_TOC_RGB)
         ais = _make_ais_solid(ground_shape, light_gray, 0.3)
     _display_solid(context, ais)
     return [ais]
@@ -360,7 +370,7 @@ def configure_ray_tracing(display) -> None:
         rp.IsShadowEnabled          = True
         rp.IsAmbientOcclusionEnabled = True
         rp.IsReflectionEnabled      = False
-        rp.RaytracingDepth          = 3
+        rp.RaytracingDepth          = 5
     except Exception as exc:
         print(f"[occ_scene] Ray-tracing unavailable ({exc}). Using Phong shading.")
 
@@ -382,18 +392,30 @@ def add_directional_light(display) -> None:
         # Remove default lights (headlight + ambient) so we own the balance.
         display.Viewer.SetLightOff()
 
-        # Dim ambient: prevents pitch-black on shadowed faces.
+        # Very dim ambient: keeps shadowed faces visible but strongly dark.
+        # Low value maximises shadow/lit contrast → crisp hard shadows.
         ambient = Graphic3d_CLight(Graphic3d_TOLS_AMBIENT)
-        ambient.SetColor(Quantity_Color(0.15, 0.15, 0.15, Quantity_TOC_RGB))
+        ambient.SetColor(Quantity_Color(0.1, 0.1, 0.1, Quantity_TOC_RGB))
         display.Viewer.AddLight(ambient)
 
-        # Primary sun: upper-right of the isometric view (eye at 1,1,1, Z-up).
-        # Visible-face Lambert factors (normalised sun (0.5,-1.0,-2.0)):
-        #   top  (0,0,1): 0.87  → ambient + 0.87 ≈ near-white
-        #   right(0,1,0): 0.44  → ambient + 0.44 ≈ medium grey
-        #   left (1,0,0): 0.00  → ambient only  ≈ dark grey
+        # Primary sun: fixed directional light (non-headlight) from upper-right.
+        # SetHeadlight(False) is critical: without it the light follows the camera
+        # and shadows always fall behind the building (invisible to the viewer).
+        #
+        # Direction (1.0, -1.5, -1.2): comes from +X / -Y / +Z — sun is high and
+        # to the right of the isometric view (1.2, 0.8, 1.0).  The steeper Z
+        # component gives a clean 45° cast shadow on the ground plane.
+        #
+        # Intensity 2.0 combined with ambient 0.07 gives a ~28:1 lit/shadow ratio,
+        # making the shadow boundary sharp and readable.
+        #
+        # Lambert factors for view (1.2, 0.8, 1.0):
+        #   top  (0,0,1): bright   — sun hits directly
+        #   right(0,1,0): dark     — almost parallel, near-shadow
+        #   left (1,0,0): medium   — catches some direct light
         sun = Graphic3d_CLight(Graphic3d_TOLS_DIRECTIONAL)
-        sun.SetDirection(gp_Dir(0.5, -1.0, -2.0))
+        sun.SetDirection(gp_Dir(1.0, -1.5, -1.2))
+        sun.SetHeadlight(True)
         sun.SetColor(Quantity_Color(1.0, 1.0, 1.0, Quantity_TOC_RGB))
         sun.SetIntensity(1.0)
         display.Viewer.AddLight(sun)

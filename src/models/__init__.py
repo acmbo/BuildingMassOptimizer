@@ -9,6 +9,7 @@ from models.column_grid import ColumnGrid
 from models.individuum import IndividuumParams, Individuum
 from models.building_core import BuildingCore
 from models.building_core_engine import find_building_cores
+from models.hallway import HallwayParams, SkeletonGraph, HallwayLayout, TravelDistanceViolation
 
 __all__ = [
     "FloorData",
@@ -25,4 +26,8 @@ __all__ = [
     "Individuum",
     "BuildingCore",
     "find_building_cores",
+    "HallwayParams",
+    "SkeletonGraph",
+    "HallwayLayout",
+    "TravelDistanceViolation",
 ]
