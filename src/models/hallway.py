@@ -823,9 +823,20 @@ class HallwayLayout:
         if params.core_locations and not skeleton.is_connected():
             skeleton.bridge_components(poly)
 
-        # Cleanup: remove near-zero leaf edges (tiny artifacts from grid snapping)
-        # Use a very small threshold to avoid destroying valid structure
-        skeleton.prune(0.05, [])
+        # Cleanup: remove near-zero edges (artifacts from grid snapping).
+        # Do NOT use prune() here — its iterative leaf-removal phase would
+        # cascade and collapse the entire skeleton on non-branching shapes
+        # (chains, L-shapes, etc.) because all endpoints are unprotected leaves.
+        # A direct edge filter is sufficient: snap_to_grid already handles
+        # node merging via _merge_close_vertices.
+        skeleton.edges = [
+            (u, v) for u, v in skeleton.edges
+            if math.hypot(
+                skeleton.nodes[v][0] - skeleton.nodes[u][0],
+                skeleton.nodes[v][1] - skeleton.nodes[u][1],
+            ) >= 0.05
+        ]
+        skeleton._compact_nodes()
 
         # Edge case: no edges after processing → create minimal cross spine
         if not skeleton.edges:
