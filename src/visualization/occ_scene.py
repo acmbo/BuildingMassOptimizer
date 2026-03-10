@@ -122,24 +122,15 @@ def _make_ais_wireframe(
 
 
 def _make_ais_plaster(shape, color: Quantity_Color) -> AIS_Shape:
-    """AIS_Shape with matte Graphic3d_NOM_PLASTER material, fully opaque."""
-    from OCC.Core.Graphic3d import Graphic3d_MaterialAspect, Graphic3d_NOM_PLASTER
-
+    """AIS_Shape with opaque white shading (architectural style). No edge lines."""
     ais = AIS_Shape(shape)
     drawer = ais.Attributes()
 
-    mat = Graphic3d_MaterialAspect(Graphic3d_NOM_PLASTER)
-    mat.SetColor(color)
-
     shading = Prs3d_ShadingAspect()
-    shading.SetMaterial(mat)
+    shading.SetColor(color)
     shading.SetTransparency(0.0)
     drawer.SetShadingAspect(shading)
-
-    edge = Prs3d_LineAspect(color, Aspect_TOL_SOLID, 0.4)
-    drawer.SetWireAspect(edge)
-    drawer.SetFaceBoundaryAspect(edge)
-    drawer.SetFaceBoundaryDraw(True)
+    drawer.SetFaceBoundaryDraw(False)
     return ais
 
 
@@ -186,7 +177,7 @@ def add_building_mass(
     """
     result = []
     if style == "ARCHITECTURAL":
-        arch_white = Quantity_Color(1.0, 1.0, 1.0, Quantity_TOC_RGB)
+        arch_white = Quantity_Color(0.92, 0.92, 0.92, Quantity_TOC_RGB)
         for floor in mass.floors:
             ais = _make_ais_plaster(floor.solid, arch_white)
             _display_solid(context, ais)
@@ -327,10 +318,13 @@ def configure_diagnostic_background(display) -> None:
 
 
 def configure_architectural_background(display) -> None:
-    """Light grey-to-white gradient matching the white architectural model."""
-    top = [230, 235, 240]
-    bot = [255, 255, 255]
-    display.set_bg_gradient_color(top, bot)
+    """Pure white background + hide axis triedron for clean architectural look."""
+    white = [255, 255, 255]
+    display.set_bg_gradient_color(white, white)
+    try:
+        display.hide_triedron()
+    except Exception:
+        pass
 
 
 def configure_isometric_view(display) -> None:
@@ -340,7 +334,12 @@ def configure_isometric_view(display) -> None:
     The view projection is set to (1, 1, 1) from origin, Z-up.  Call this
     *after* all geometry has been added so FitAll covers all shapes.
     """
-    display.View.SetProj(1.0, 1.0, 1.0)
+    # Slightly off-axis isometric: (1.3, 0.7, 1.0) instead of (1,1,1).
+    # In exact isometric all three visible face normals are at the same angle
+    # to the headlight, producing uniform grey. The offset gives each face a
+    # distinct Lambert factor (left≈0.70, top≈0.53, right≈0.37) so the
+    # building reads clearly as a 3D solid without changing the visual impression.
+    display.View.SetProj(1.2, 0.8, 1.0)
     display.View.SetUp(0.0, 0.0, 1.0)
     display.FitAll()
 
@@ -374,10 +373,36 @@ def add_directional_light(display) -> None:
     Call this in ARCHITECTURAL mode before ``start_display()``.
     """
     try:
-        from OCC.Core.V3d import V3d_DirectionalLight
-        light = V3d_DirectionalLight(gp_Dir(1.0, -0.8, -1.5))
-        display.Viewer.AddLight(light)
+        from OCC.Core.Graphic3d import (
+            Graphic3d_CLight,
+            Graphic3d_TOLS_DIRECTIONAL,
+            Graphic3d_TOLS_AMBIENT,
+        )
+
+        # Remove default lights (headlight + ambient) so we own the balance.
+        display.Viewer.SetLightOff()
+
+        # Dim ambient: prevents pitch-black on shadowed faces.
+        ambient = Graphic3d_CLight(Graphic3d_TOLS_AMBIENT)
+        ambient.SetColor(Quantity_Color(0.15, 0.15, 0.15, Quantity_TOC_RGB))
+        display.Viewer.AddLight(ambient)
+
+        # Primary sun: upper-right of the isometric view (eye at 1,1,1, Z-up).
+        # Visible-face Lambert factors (normalised sun (0.5,-1.0,-2.0)):
+        #   top  (0,0,1): 0.87  → ambient + 0.87 ≈ near-white
+        #   right(0,1,0): 0.44  → ambient + 0.44 ≈ medium grey
+        #   left (1,0,0): 0.00  → ambient only  ≈ dark grey
+        sun = Graphic3d_CLight(Graphic3d_TOLS_DIRECTIONAL)
+        sun.SetDirection(gp_Dir(0.5, -1.0, -2.0))
+        sun.SetColor(Quantity_Color(1.0, 1.0, 1.0, Quantity_TOC_RGB))
+        sun.SetIntensity(1.0)
+        display.Viewer.AddLight(sun)
+
         display.Viewer.SetLightOn()
+        try:
+            display.View.SetLightOn()
+        except Exception:
+            pass
     except Exception as exc:
         print(f"[occ_scene] Directional light setup failed ({exc}). Using default lighting.")
 
