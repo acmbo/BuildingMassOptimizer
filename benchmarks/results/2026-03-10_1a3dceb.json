@@ -1,0 +1,109 @@
+{
+  "meta": {
+    "date": "2026-03-10",
+    "git_commit": "1a3dceb",
+    "git_branch": "main",
+    "python": "3.13.12",
+    "platform": "linux"
+  },
+  "s1_fixed_seed": {
+    "seed": 42,
+    "n_vertical": 3,
+    "n_horizontal": 2,
+    "repetitions": 20,
+    "median_ms": 64.395,
+    "min_ms": 59.468,
+    "max_ms": 195.715,
+    "stdev_ms": 29.607
+  },
+  "s2_subtractor_sweep": [
+    {
+      "n_total": 0,
+      "n_vertical": 0,
+      "n_horizontal": 0,
+      "median_ms": 1.893
+    },
+    {
+      "n_total": 1,
+      "n_vertical": 1,
+      "n_horizontal": 0,
+      "median_ms": 1.856
+    },
+    {
+      "n_total": 2,
+      "n_vertical": 1,
+      "n_horizontal": 1,
+      "median_ms": 1.928
+    },
+    {
+      "n_total": 3,
+      "n_vertical": 2,
+      "n_horizontal": 1,
+      "median_ms": 1.878
+    },
+    {
+      "n_total": 4,
+      "n_vertical": 2,
+      "n_horizontal": 2,
+      "median_ms": 1.942
+    },
+    {
+      "n_total": 5,
+      "n_vertical": 3,
+      "n_horizontal": 2,
+      "median_ms": 1.939
+    },
+    {
+      "n_total": 6,
+      "n_vertical": 3,
+      "n_horizontal": 3,
+      "median_ms": 2.159
+    },
+    {
+      "n_total": 7,
+      "n_vertical": 4,
+      "n_horizontal": 3,
+      "median_ms": 38.362
+    },
+    {
+      "n_total": 8,
+      "n_vertical": 4,
+      "n_horizontal": 4,
+      "median_ms": 40.163
+    },
+    {
+      "n_total": 9,
+      "n_vertical": 5,
+      "n_horizontal": 4,
+      "median_ms": 44.946
+    },
+    {
+      "n_total": 10,
+      "n_vertical": 5,
+      "n_horizontal": 5,
+      "median_ms": 46.07
+    },
+    {
+      "n_total": 11,
+      "n_vertical": 6,
+      "n_horizontal": 5,
+      "median_ms": 48.198
+    },
+    {
+      "n_total": 12,
+      "n_vertical": 6,
+      "n_horizontal": 6,
+      "median_ms": 48.338
+    }
+  ],
+  "s3_batch_100": {
+    "population_seed": 7,
+    "n_vertical": 3,
+    "n_horizontal": 3,
+    "count": 100,
+    "mean_ms": 35.56,
+    "median_ms": 17.906,
+    "p95_ms": 126.994,
+    "total_s": 3.556
+  }
+}
