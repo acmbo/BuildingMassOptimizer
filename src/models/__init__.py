@@ -10,6 +10,7 @@ from models.individuum import IndividuumParams, Individuum
 from models.building_core import BuildingCore
 from models.building_core_engine import find_building_cores
 from models.hallway import HallwayParams, SkeletonGraph, HallwayLayout, TravelDistanceViolation
+from models.hallway_engine import apply_hallway_to_floor, apply_hallway_to_mass
 
 __all__ = [
     "FloorData",
@@ -30,4 +31,6 @@ __all__ = [
     "SkeletonGraph",
     "HallwayLayout",
     "TravelDistanceViolation",
+    "apply_hallway_to_floor",
+    "apply_hallway_to_mass",
 ]

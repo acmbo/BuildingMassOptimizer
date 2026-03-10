@@ -55,7 +55,9 @@ MassCreator/
 │   │   ├── wire_utils.py         # extract_wire_loops() — OCC wire → Python point lists
 │   │   ├── individuum.py         # IndividuumParams, Individuum (EA genome + build pipeline)
 │   │   ├── building_core.py      # BuildingCore dataclass (center, footprint, column indices)
-│   │   └── building_core_engine.py  # find_building_cores() — centroid-first placement + grid snap
+│   │   ├── building_core_engine.py  # find_building_cores() — centroid-first placement + grid snap
+│   │   ├── hallway.py            # HallwayParams, SkeletonGraph, HallwayLayout, TravelDistanceViolation
+│   │   └── hallway_engine.py     # apply_hallway_to_floor(), apply_hallway_to_mass()
 │   └── visualization/
 │       ├── __init__.py           # Re-exports all public symbols from palette, floor_plan, occ_scene
 │       ├── palette.py            # DEFAULT_PALETTE color tokens + merge_palette()
@@ -67,15 +69,18 @@ MassCreator/
 │   │   ├── test_building_grid.py  # unit tests for src/models/building_grid.py
 │   │   ├── test_subtraction.py    # unit tests for subtraction feature
 │   │   ├── test_column_grid.py    # unit tests for src/models/column_grid.py
-│   │   └── test_building_core.py  # unit tests for BuildingCore + find_building_cores()
+│   │   │   └── test_building_core.py  # unit tests for BuildingCore + find_building_cores()
+│   └── test_hallway.py            # unit tests for hallway.py + hallway_engine.py (44 tests)
 │   └── userInteraction/          # special folder: visualisation-based tests
-│       ├── test_floorgeneration.py  # visualisation: building mass only
-│       ├── test_buildinggrid.py     # visualisation: building mass + grid
-│       ├── test_subtraction.py      # visualisation: original vs subtracted mass
-│       ├── test_column_grid.py      # visualisation: polygon footprint + column grid lines
-│       ├── test_individuum.py       # visualisation: floor plan grid (matplotlib) + 3D OCC viewer
-│       ├── test_individuum_viz.py   # visualisation: isometric 3D + architectural floor plan grid
-│       └── test_building_core.py   # visualisation: footprint + core boxes + face-midpoint markers
+│       ├── test_floorgeneration.py        # visualisation: building mass only
+│       ├── test_buildinggrid.py           # visualisation: building mass + grid
+│       ├── test_subtraction.py            # visualisation: original vs subtracted mass
+│       ├── test_column_grid.py            # visualisation: polygon footprint + column grid lines
+│       ├── test_individuum.py             # visualisation: floor plan grid (matplotlib) + 3D OCC viewer
+│       ├── test_individuum_viz.py         # visualisation: isometric 3D + architectural floor plan grid
+│       ├── test_building_core.py          # visualisation: footprint + core boxes + face-midpoint markers
+│       ├── test_hallway_cube.py           # visualisation: hallway on a 20×20 m square floor
+│       └── test_hallway_cuttedLShape.py   # visualisation: hallway on an L-shaped floor
 └── doc/
     ├── requirements/
     │   ├── Models/
@@ -85,7 +90,8 @@ MassCreator/
     │   │   ├── ColumnGrid.md                 # Feature spec: 2D structural column grid
     │   │   └── BuildingCore.md               # Feature spec: service core placement
     │   ├── Algorithm/
-    │   │   └── IndividuumGeneration.md       # Feature spec: EA genome + build pipeline
+    │   │   ├── IndividuumGeneration.md       # Feature spec: EA genome + build pipeline
+    │   │   └── HallwayExploration.md         # Feature spec: skeleton-based hallway layout
     │   └── Visualization/
     │       ├── IsometricAndFloorPlots.md             # Spec: matplotlib isometric + basic floor grid
     │       ├── ArchitecturalFloorPlanVisualization.md # Spec: architectural plan rendering
@@ -141,12 +147,16 @@ Each script in this folder corresponds to a feature or combination of features:
 | `test_individuum.py` | Architectural floor plan grid (matplotlib, saved as PNG) + OCC 3D viewer with raw/aligned subtractor boxes and core boxes |
 | `test_individuum_viz.py` | Isometric 3D matplotlib rendering + architectural floor plan grid |
 | `test_building_core.py` | Footprint + core boxes + face-midpoint distance markers |
+| `test_hallway_cube.py` | Hallway on a 20×20 m square floor: raw medial axis, final skeleton, hallway zone, room zone, core circles |
+| `test_hallway_cuttedLShape.py` | Hallway on an L-shaped floor with two cores |
 
 Run a visualisation test directly:
 ```bash
 conda run -n pyoccEnv python test/userInteraction/test_buildinggrid.py
 conda run -n pyoccEnv python test/userInteraction/test_subtraction.py
 conda run -n pyoccEnv python test/userInteraction/test_individuum_viz.py --seed 42
+conda run -n pyoccEnv python test/userInteraction/test_hallway_cube.py
+conda run -n pyoccEnv python test/userInteraction/test_hallway_cuttedLShape.py
 ```
 
 ---
@@ -185,6 +195,12 @@ Domain model layer. All classes are Python `@dataclass`s. **No display code.**
 | `Individuum` | `individuum.py` | EA genome (normalized [0,1] floats) + `create_random()` + `build()` → `(original_mass, subtracted_mass, config)` |
 | `BuildingCore` | `building_core.py` | Vertical service zone: center XY, footprint size, column-grid cell indices; derived edge properties |
 | `find_building_cores` | `building_core_engine.py` | Places cores so every ground-floor face is ≤ max_face_distance from a core; snaps to column-grid cell centers; validates candidate footprint (center + 4 corners) against every floor solid so cores are never placed inside voids on any floor |
+| `TravelDistanceViolation` | `hallway.py` | Exception raised when maximum travel distance cannot be satisfied |
+| `HallwayParams` | `hallway.py` | Parameters for one hallway run: floor polygon, elevation, hallway_width, span, core locations, travel-distance limit, snap tolerances |
+| `SkeletonGraph` | `hallway.py` | Skeleton graph (nodes + edges) with full pipeline: `from_medial_axis()`, `prune()`, `orthogonalize()`, `attract_cores()`, `snap_to_grid()`, `is_connected()`, `bridge_components()`, `travel_distances()` |
+| `HallwayLayout` | `hallway.py` | Result of hallway generation: skeleton, Shapely hallway polygon (`hallway_shp`), OCC shapes (`hallway_polygon`, `room_zone`), area metrics; `generate(params)` runs the full 8-step pipeline |
+| `apply_hallway_to_floor` | `hallway_engine.py` | Generates a `HallwayLayout` for one `FloorData` and stores it in `floor.hallway`; the field is `None` by default and only set when this function is called |
+| `apply_hallway_to_mass` | `hallway_engine.py` | Applies `apply_hallway_to_floor()` to every floor of a `BuildingMass`; accepts optional per-floor polygon list for buildings with subtractions |
 
 ### `src/visualization/`
 Display layer. All matplotlib and OCC display code lives here; `src/models/` imports nothing from this package.
@@ -247,9 +263,28 @@ BuildingMass
 └── floors: list[FloorData]
             ├── index, elevation, floor_height
             ├── cores: list[BuildingCore]   (same list as BuildingMass.cores)
+            ├── hallway: HallwayLayout | None   (None by default; set by hallway_engine)
             ├── solid          → TopoDS_Shape  (extruded / cut volume)
             └── polygon_wire   → TopoDS_Shape  (plan outline at elevation;
                                                 may be a compound of wires after subtraction)
+
+HallwayLayout                          (stored in FloorData.hallway, optional)
+├── params: HallwayParams
+│   ├── floor_polygon, elevation
+│   ├── hallway_width, span_x, span_y
+│   ├── core_locations, max_travel_distance
+│   └── snap_tolerance, orthog_angle_threshold, pruning_min_length
+├── skeleton: SkeletonGraph
+│   ├── nodes: list[tuple[float,float]]
+│   └── edges: list[tuple[int,int]]
+├── hallway_shp   → Shapely Polygon/MultiPolygon  (2-D hallway area)
+├── floor_shp     → Shapely Polygon               (input floor boundary)
+├── hallway_polygon → TopoDS_Shape  (OCC face compound at elevation)
+├── room_zone       → TopoDS_Shape  (OCC face compound at elevation)
+├── floor_area, hallway_area, room_area  (float, m²)
+├── hallway_area_ratio()    → float
+├── max_travel_distance_actual() → float
+└── validate()              → list[str]  (empty = all checks pass)
 
 BuildingCore
 ├── center_x, center_y   – snapped column-grid cell center

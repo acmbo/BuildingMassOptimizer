@@ -32,3 +32,8 @@ class FloorData:
 
     cores: list = field(default_factory=list)
     """Building cores active on this floor.  Populated by find_building_cores()."""
+
+    hallway: object = field(default=None)
+    """HallwayLayout for this floor, or None.  Set by apply_hallway_to_floor() /
+    apply_hallway_to_mass() in hallway_engine.py.  Always None during Individuum
+    generation — the field is never touched by the EA pipeline."""

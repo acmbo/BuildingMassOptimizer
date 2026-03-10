@@ -15,12 +15,14 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
 from shapely.geometry import Polygon as ShapelyPolygon
 
+from models.building_mass import BuildingMass
 from models.hallway import (
     HallwayLayout,
     HallwayParams,
     SkeletonGraph,
     TravelDistanceViolation,
 )
+from models.hallway_engine import apply_hallway_to_floor, apply_hallway_to_mass
 
 # ---------------------------------------------------------------------------
 # Shared polygon fixtures
@@ -382,6 +384,134 @@ class TestQG12_TravelDistanceViolation(unittest.TestCase):
         # Message should contain a location tuple-like string
         msg = str(ctx.exception)
         self.assertIn("node", msg.lower())
+
+
+# ---------------------------------------------------------------------------
+# HallwayEngine — apply_hallway_to_floor / apply_hallway_to_mass
+# ---------------------------------------------------------------------------
+
+
+class TestHallwayEngine(unittest.TestCase):
+    """Tests for hallway_engine.py."""
+
+    def _base_params(self, polygon, elevation=0.0):
+        return HallwayParams(
+            floor_polygon=polygon,
+            elevation=elevation,
+            hallway_width=1.8,
+            span_x=4.0,
+            span_y=4.0,
+            core_locations=[(10.0, 5.0)],
+            max_travel_distance=45.0,
+        )
+
+    # -- apply_hallway_to_floor --------------------------------------------
+
+    def test_apply_to_floor_sets_hallway(self):
+        """floor.hallway is None before and HallwayLayout after the call."""
+        mass = BuildingMass.create(
+            [(0, 0, 0), (20, 0, 0), (20, 10, 0), (0, 10, 0)],
+            floor_height=3.0,
+            num_floors=1,
+        )
+        floor = mass.floors[0]
+        self.assertIsNone(floor.hallway)
+
+        params = self._base_params(RECT_POLY)
+        apply_hallway_to_floor(floor, params)
+
+        self.assertIsInstance(floor.hallway, HallwayLayout)
+
+    def test_apply_to_floor_returns_same_floor(self):
+        mass = BuildingMass.create(
+            [(0, 0, 0), (20, 0, 0), (20, 10, 0), (0, 10, 0)],
+            floor_height=3.0,
+            num_floors=1,
+        )
+        floor = mass.floors[0]
+        params = self._base_params(RECT_POLY)
+        result = apply_hallway_to_floor(floor, params)
+        self.assertIs(result, floor)
+
+    def test_apply_to_floor_hallway_shp_not_empty(self):
+        mass = BuildingMass.create(
+            [(0, 0, 0), (20, 0, 0), (20, 10, 0), (0, 10, 0)],
+            floor_height=3.0,
+            num_floors=1,
+        )
+        floor = mass.floors[0]
+        params = self._base_params(RECT_POLY)
+        apply_hallway_to_floor(floor, params)
+        self.assertFalse(floor.hallway.hallway_shp.is_empty)
+
+    # -- apply_hallway_to_mass ---------------------------------------------
+
+    def test_apply_to_mass_all_floors_get_hallway(self):
+        """Every floor of a 3-floor mass has a HallwayLayout after the call."""
+        mass = BuildingMass.create(
+            [(0, 0, 0), (20, 0, 0), (20, 10, 0), (0, 10, 0)],
+            floor_height=3.0,
+            num_floors=3,
+        )
+        for floor in mass.floors:
+            self.assertIsNone(floor.hallway)
+
+        params = self._base_params(RECT_POLY)
+        apply_hallway_to_mass(mass, params)
+
+        for floor in mass.floors:
+            self.assertIsInstance(floor.hallway, HallwayLayout)
+
+    def test_apply_to_mass_returns_same_mass(self):
+        mass = BuildingMass.create(
+            [(0, 0, 0), (20, 0, 0), (20, 10, 0), (0, 10, 0)],
+            floor_height=3.0,
+            num_floors=2,
+        )
+        params = self._base_params(RECT_POLY)
+        result = apply_hallway_to_mass(mass, params)
+        self.assertIs(result, mass)
+
+    def test_apply_to_mass_elevation_matches_floor(self):
+        """Each floor's HallwayLayout.params.elevation must equal the floor elevation."""
+        mass = BuildingMass.create(
+            [(0, 0, 0), (20, 0, 0), (20, 10, 0), (0, 10, 0)],
+            floor_height=3.0,
+            num_floors=4,
+        )
+        params = self._base_params(RECT_POLY, elevation=0.0)
+        apply_hallway_to_mass(mass, params)
+        for floor in mass.floors:
+            self.assertAlmostEqual(
+                floor.hallway.params.elevation,
+                floor.elevation,
+                places=9,
+            )
+
+    def test_apply_to_mass_per_floor_polygons(self):
+        """per_floor_polygons overrides the polygon for each floor independently."""
+        poly_a = [(0, 0), (20, 0), (20, 10), (0, 10)]
+        poly_b = [(0, 0), (15, 0), (15, 10), (0, 10)]
+        mass = BuildingMass.create(
+            [(0, 0, 0), (20, 0, 0), (20, 10, 0), (0, 10, 0)],
+            floor_height=3.0,
+            num_floors=2,
+        )
+        params = self._base_params(poly_a)
+        apply_hallway_to_mass(mass, params, per_floor_polygons=[poly_a, poly_b])
+
+        self.assertEqual(mass.floors[0].hallway.params.floor_polygon, poly_a)
+        self.assertEqual(mass.floors[1].hallway.params.floor_polygon, poly_b)
+
+    def test_individuum_floors_untouched_without_engine(self):
+        """Floors created via BuildingMass.create() have hallway=None by default."""
+        mass = BuildingMass.create(
+            [(0, 0, 0), (20, 0, 0), (20, 10, 0), (0, 10, 0)],
+            floor_height=3.0,
+            num_floors=5,
+        )
+        for floor in mass.floors:
+            self.assertIsNone(floor.hallway)
 
 
 if __name__ == "__main__":
