@@ -14,6 +14,16 @@ conda run -n pyoccEnv python test/userInteraction/test_individuum_viz.py --seed 
 conda run -n pyoccEnv python test/userInteraction/test_individuum_viz.py --save-dir /tmp
 
 
+# Interactive window (diagnostic style)
+conda run -n pyoccEnv python test/userInteraction/test_pyvista_scene.py
+
+# Architectural style
+conda run -n pyoccEnv python test/userInteraction/test_pyvista_scene.py --style ARCHITECTURAL --save test/userInteraction/individuum_pyvista_archi.png
+
+# Headless PNG export
+conda run -n pyoccEnv python test/userInteraction/test_pyvista_scene.py --save test/userInteraction/individuum_pyvista.png
+
+
 ## Run general tests
 conda run -n pyoccEnv python -m pytest test -v
 

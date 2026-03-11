@@ -149,6 +149,7 @@ Each script in this folder corresponds to a feature or combination of features:
 | `test_building_core.py` | Footprint + core boxes + face-midpoint distance markers |
 | `test_hallway_cube.py` | Hallway on a 20×20 m square floor: raw medial axis, final skeleton, hallway zone, room zone, core circles |
 | `test_hallway_cuttedLShape.py` | Hallway on an L-shaped floor with two cores |
+| `test_pyvista_scene.py` | PyVista render of a subtracted building mass; `--style DIAGNOSTIC\|ARCHITECTURAL`; `--save PATH` for headless PNG export |
 
 Run a visualisation test directly:
 ```bash
@@ -157,6 +158,9 @@ conda run -n pyoccEnv python test/userInteraction/test_subtraction.py
 conda run -n pyoccEnv python test/userInteraction/test_individuum_viz.py --seed 42
 conda run -n pyoccEnv python test/userInteraction/test_hallway_cube.py
 conda run -n pyoccEnv python test/userInteraction/test_hallway_cuttedLShape.py
+conda run -n pyoccEnv python test/userInteraction/test_pyvista_scene.py
+conda run -n pyoccEnv python test/userInteraction/test_pyvista_scene.py --style ARCHITECTURAL
+conda run -n pyoccEnv python test/userInteraction/test_pyvista_scene.py --save /tmp/mass.png
 ```
 
 ---
@@ -211,6 +215,7 @@ Display layer. All matplotlib and OCC display code lives here; `src/models/` imp
 | `scale_bar.py` | `draw_scale_bar(ax, anchor, palette)` + `draw_north_arrow(ax, anchor, palette)` — data-space annotations |
 | `floor_plan.py` | `draw_floor_plan(ax, floor, *, column_grid, ...)` — single-floor architectural section-cut plan; `draw_floor_plan_grid(floors, ...)` — multi-floor composition |
 | `occ_scene.py` | Modular OCC 3D display helpers: `add_building_mass`, `add_original_mass`, `add_subtractors`, `add_cores`, `add_ground_plane`, `add_directional_light`, `configure_diagnostic_background`, `configure_architectural_background`, `configure_isometric_view`, `configure_ray_tracing`, `export_png`, `render_png` |
+| `pyvista_scene.py` | PyVista / VTK equivalent of `occ_scene`: same public API but renders via VTK. `occ_shape_to_pyvista()` tessellates OCC BRep → `pyvista.PolyData`. Offscreen PNG export works without Xvfb. Import directly (not via `__init__`) to avoid name conflicts with `occ_scene`. |
 | `__init__.py` | Re-exports all public symbols from `palette`, `floor_plan`, and `occ_scene` |
 
 #### OCC scene visual styles
@@ -233,6 +238,23 @@ Display layer. All matplotlib and OCC display code lives here; `src/models/` imp
 | `configure_ray_tracing` | `Graphic3d_RM_RAYTRACING`, shadows, AO | ARCHITECTURAL |
 | `export_png` | Tk `after` callback → `V3d_View.Dump` | Interactive (SimpleGui) |
 | `render_png` | Full setup → PNG, interactive or headless | Both |
+
+#### PyVista scene (`pyvista_scene.py`)
+
+Mirrors the OCC scene API. Import from `visualization.pyvista_scene` directly.
+
+| Style | Background | Opacity | Extras |
+|---|---|---|---|
+| `DIAGNOSTIC` | Dark navy `(0.031, 0.031, 0.098)` | 0.18 (floors), 0.03 (ghost), 0.45 (cores) | Cyan edges, red/orange subtractor wireframes |
+| `ARCHITECTURAL` | White `(1, 1, 1)` | 1.0 (fully opaque) | White ground plane, no edges |
+
+| Function | Notes |
+|---|---|
+| `occ_shape_to_pyvista(shape, deflection)` | Tessellates any OCC BRep shape → `pyvista.PolyData` via `BRepMesh_IncrementalMesh` |
+| `add_building_mass` / `add_original_mass` / `add_subtractors` / `add_cores` / `add_ground_plane` | Same semantics as OCC equivalents |
+| `configure_isometric_view` | Eye direction (1.2, 0.8, 1.0); camera position computed from scene bounding box (avoids below-ground placement when a large ground plane is present) |
+| `render_png(..., interactive=False)` | Offscreen PNG via VTK EGL/OSMesa — no Xvfb required |
+| `render_png(..., interactive=True)` | Opens interactive PyVista window |
 
 #### Architectural plan drawing layers (Z-order)
 

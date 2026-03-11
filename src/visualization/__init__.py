@@ -20,6 +20,16 @@ configure_diagnostic_background, configure_architectural_background,
 configure_isometric_view, configure_ray_tracing,
 export_png, render_png
     Modular OCC display helpers (see visualization.occ_scene).
+
+Public API — 3D PyVista scene (pyvista / VTK)
+----------------------------------------------
+Mirrors the OCC scene API but uses PyVista for rendering.  Import directly
+from ``visualization.pyvista_scene`` to avoid name conflicts with the OCC
+helpers above.  Supports offscreen PNG export without Xvfb.
+    occ_shape_to_pyvista, add_building_mass, add_original_mass,
+    add_subtractors, add_cores, add_ground_plane,
+    configure_diagnostic_background, configure_architectural_background,
+    configure_isometric_view, render_png
 """
 
 from visualization.floor_plan import draw_floor_plan, draw_floor_plan_grid
