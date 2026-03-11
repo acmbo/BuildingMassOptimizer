@@ -11,6 +11,7 @@ from models.building_core import BuildingCore
 from models.building_core_engine import find_building_cores
 from models.hallway import HallwayParams, SkeletonGraph, HallwayLayout, TravelDistanceViolation
 from models.hallway_engine import apply_hallway_to_floor, apply_hallway_to_mass
+from models.hbjson_exporter import export_to_hbjson
 
 __all__ = [
     "FloorData",
@@ -33,4 +34,5 @@ __all__ = [
     "TravelDistanceViolation",
     "apply_hallway_to_floor",
     "apply_hallway_to_mass",
+    "export_to_hbjson",
 ]

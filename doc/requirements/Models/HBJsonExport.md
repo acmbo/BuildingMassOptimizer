@@ -152,21 +152,33 @@ scope (see §9).
 For each `FloorData.solid` (a `TopoDS_Shape`):
 
 ```
+0. Compute the solid's bbox centroid (used for outward-normal verification).
+
 1. Use TopExp_Explorer(solid, TopAbs_FACE) to iterate over all faces.
 2. For each OCC face:
-   a. Obtain the outer wire via BRepTools.OuterWire(face).
-   b. Extract ordered vertices using wire_utils.extract_wire_loops(wire).
-      → list of (x, y, z) tuples; guaranteed closed (last ≠ first).
-   c. Determine the OCC face orientation flag (face.Orientation()).
-      If TopAbs_REVERSED, reverse the vertex list so the winding
-      order matches the outward normal convention.
-   d. Compute the outward normal using the cross-product of the first
-      two edges, then normalise:
+   a. Cast to TopoDS_Face via topods.Face().
+   b. Obtain the outer wire via breptools.OuterWire(face).
+   c. Extract ordered vertices using BRepTools_WireExplorer.
+      → list of (x, y, z) tuples.
+   d. Compute a trial normal using the cross-product of the first triangle:
         v0 = pts[1] - pts[0],  v1 = pts[2] - pts[0]
         n = normalise(cross(v0, v1))
-   e. Classify face_type from n.z (§3.3).
+   e. Check outward direction:
+        to_face = face_centroid - solid_centroid
+        if dot(n, to_face) < 0:
+            pts = reversed(pts)
+            n = recompute_normal(pts)
+   f. Classify face_type from n.z (§3.3).
 3. Collect all extracted faces as list[_RawFace(vertices, normal, face_type)].
 ```
+
+> **Why centroid-based instead of `face.Orientation()`:**  The OCC orientation
+> flag (`TopAbs_FORWARD` / `TopAbs_REVERSED`) depends on how the shell was
+> internally assembled by `BRepPrimAPI_MakePrism` and `BRepAlgoAPI_Cut`.  In
+> practice both the top and bottom faces of a prism share the same orientation
+> flag, making the flag unreliable for distinguishing inward from outward
+> normals.  The centroid dot-product test is topology-agnostic and correct for
+> any closed solid.
 
 ### 4.2 Adjacency pairing
 
